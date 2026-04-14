@@ -180,3 +180,11 @@ Use a release asset zip that contains the correct plugin root folder name (`tcuk
 ## Version
 
 `1.0.0`
+
+## License
+
+This plugin is licensed under the GNU General Public License v2.0 or later (GPL-2.0-or-later).
+
+- License: GPLv2 or later
+- License URI: https://www.gnu.org/licenses/gpl-2.0.html
+- Copyright: TCUK
