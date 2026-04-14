@@ -40,6 +40,13 @@
     grid-template-columns: 1fr 1fr;
     gap: 18px;
     width: 100%;
+    align-items: start;
+}
+
+.tcuk-migrator-wrap .tcuk-grid > .tcuk-card {
+    width: auto;
+    max-width: none;
+    min-width: 0;
 }
 
 .tcuk-page-head {
@@ -377,6 +384,17 @@
     min-height: 90px;
 }
 
+.tcuk-migrator-wrap select {
+    background-repeat: no-repeat;
+}
+
+.tcuk-migrator-wrap select[multiple] {
+    -webkit-appearance: menulist;
+    appearance: auto;
+    background-image: none !important;
+    padding-right: 10px;
+}
+
 .tcuk-field input[type="text"]:focus,
 .tcuk-field input[type="password"]:focus,
 .tcuk-field input[type="url"]:focus,
@@ -472,6 +490,20 @@
     overflow: hidden;
 }
 
+.tcuk-table-scroll {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.tcuk-table-scroll > table.widefat {
+    min-width: 940px;
+}
+
+.tcuk-table-scroll .tcuk-actions-cell {
+    white-space: nowrap;
+}
+
 .tcuk-migrator-wrap table.widefat thead th {
     background: #f3f7fc;
     color: #2b3a4a;
@@ -558,6 +590,10 @@
 
     .tcuk-actions-cell {
         white-space: normal;
+    }
+
+    .tcuk-table-scroll .tcuk-actions-cell {
+        white-space: nowrap;
     }
 
     .tcuk-inline-form {

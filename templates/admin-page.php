@@ -213,7 +213,7 @@ $backup_count       = is_array( $backups ) ? count( $backups ) : 0;
             </form>
         </section>
 
-        <section class="tcuk-card">
+        <section class="tcuk-card tcuk-card-wide">
             <h2><?php esc_html_e( 'Backups', 'tcuk-all-in-one-migrator' ); ?></h2>
 
             <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="tcuk-action-form">
@@ -288,6 +288,7 @@ $backup_count       = is_array( $backups ) ? count( $backups ) : 0;
             <?php if ( empty( $backups ) ) : ?>
                 <p><?php esc_html_e( 'No backups yet.', 'tcuk-all-in-one-migrator' ); ?></p>
             <?php else : ?>
+                <div class="tcuk-table-scroll">
                 <table class="widefat striped">
                     <thead>
                     <tr>
@@ -329,6 +330,7 @@ $backup_count       = is_array( $backups ) ? count( $backups ) : 0;
                     <?php endforeach; ?>
                     </tbody>
                 </table>
+                </div>
             <?php endif; ?>
         </section>
     </div>
