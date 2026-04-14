@@ -104,6 +104,8 @@ class TCUK_Migrator_Updater {
             return $transient;
         }
 
+        $logo_url = plugins_url( 'assets/images/logo.png', $this->plugin_file );
+
         $transient->response[ $this->plugin_basename ] = (object) array(
             'slug'        => $this->plugin_slug,
             'plugin'      => $this->plugin_basename,
@@ -112,6 +114,11 @@ class TCUK_Migrator_Updater {
             'package'     => $package,
             'tested'      => (string) ( $release['target_commitish'] ?? '' ),
             'requires_php'=> '7.4',
+            'icons'       => array(
+                'default' => $logo_url,
+                '1x'      => $logo_url,
+                '2x'      => $logo_url,
+            ),
         );
 
         return $transient;
@@ -133,6 +140,8 @@ class TCUK_Migrator_Updater {
         }
 
         $changelog     = ! empty( $release ) ? (string) ( $release['body'] ?? '' ) : '';
+        $logo_url      = plugins_url( 'assets/images/logo.png', $this->plugin_file );
+        $banner_url    = plugins_url( 'assets/images/banner.png', $this->plugin_file );
 
         return (object) array(
             'name'          => 'TCUK All In One Migrator',
@@ -142,6 +151,15 @@ class TCUK_Migrator_Updater {
             'homepage'      => (string) ( $release['html_url'] ?? ( 'https://github.com/' . $this->repo ) ),
             'download_link' => $download_link,
             'last_updated'  => (string) ( $release['published_at'] ?? gmdate( 'c' ) ),
+            'icons'         => array(
+                'default' => $logo_url,
+                '1x'      => $logo_url,
+                '2x'      => $logo_url,
+            ),
+            'banners'       => array(
+                'low'  => $banner_url,
+                'high' => $banner_url,
+            ),
             'sections'      => array(
                 'description' => '<p>TCUK All In One Migrator is a deployment and migration toolkit for WordPress, combining API Push, GitHub theme pull, and backup/restore workflows in one admin dashboard.</p><p>Move themes, plugins, uploads, and database content with selective component control, environment-safe URL normalization, and post-restore stabilization for reliable production rollouts.</p>',
                 'changelog'   => '' !== $changelog ? wp_kses_post( nl2br( $changelog ) ) : 'No changelog provided for this release.',

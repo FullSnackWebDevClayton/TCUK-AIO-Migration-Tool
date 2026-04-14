@@ -42,3 +42,5 @@ wp-content/debug.log
 # Plugin-specific runtime artifacts
 tcuk-migrator-backups/
 tcuk-migrator-temp/
+index.html
+demo-landing/
