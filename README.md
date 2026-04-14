@@ -19,7 +19,7 @@ A WordPress admin plugin for:
 - Optional repo subdirectory (if theme is nested in a monorepo)
 - Installs directly into: `wp-content/themes/<theme-slug>`
 
-### 2) Auto Setup Wizard
+### 2) Setup Wizard
 
 - One-click preflight check from admin dashboard
 - Validates:

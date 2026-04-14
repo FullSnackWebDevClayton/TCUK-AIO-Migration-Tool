@@ -31,12 +31,16 @@ $backup_count       = is_array( $backups ) ? count( $backups ) : 0;
 
     <div class="tcuk-summary-strip">
         <div class="tcuk-summary-item">
-            <span class="tcuk-summary-label"><?php esc_html_e( 'Active Theme', 'tcuk-all-in-one-migrator' ); ?></span>
-            <span class="tcuk-summary-value"><?php echo esc_html( $active_theme ); ?></span>
+            <span class="tcuk-summary-label"><?php esc_html_e( 'License', 'tcuk-all-in-one-migrator' ); ?></span>
+            <?php if ( ! empty( $is_premium ) ) : ?>
+                <span class="tcuk-summary-badge tcuk-badge-premium"><?php esc_html_e( 'Premium', 'tcuk-all-in-one-migrator' ); ?></span>
+            <?php else : ?>
+                <span class="tcuk-summary-badge tcuk-badge-free"><?php esc_html_e( 'Free', 'tcuk-all-in-one-migrator' ); ?></span>
+            <?php endif; ?>
         </div>
         <div class="tcuk-summary-item">
-            <span class="tcuk-summary-label"><?php esc_html_e( 'Destination URL', 'tcuk-all-in-one-migrator' ); ?></span>
-            <span class="tcuk-summary-value"><?php echo esc_html( home_url() ); ?></span>
+            <span class="tcuk-summary-label"><?php esc_html_e( 'Active Theme', 'tcuk-all-in-one-migrator' ); ?></span>
+            <span class="tcuk-summary-value"><?php echo esc_html( $active_theme ); ?></span>
         </div>
         <div class="tcuk-summary-item">
             <span class="tcuk-summary-label"><?php esc_html_e( 'Stored Backups', 'tcuk-all-in-one-migrator' ); ?></span>
@@ -55,7 +59,7 @@ $backup_count       = is_array( $backups ) ? count( $backups ) : 0;
     <div class="notice <?php echo ! empty( $is_premium ) ? 'notice-success' : 'notice-warning'; ?>">
         <p>
             <?php if ( ! empty( $is_premium ) ) : ?>
-                <?php esc_html_e( 'Premium is active. All migration features are unlocked.', 'tcuk-all-in-one-migrator' ); ?>
+                <?php esc_html_e( '', 'tcuk-all-in-one-migrator' ); ?>
             <?php else : ?>
                 <?php esc_html_e( 'Free mode is active: only file-based Theme backup and Theme restore are available. All other features require premium.', 'tcuk-all-in-one-migrator' ); ?>
             <?php endif; ?>
@@ -79,7 +83,7 @@ $backup_count       = is_array( $backups ) ? count( $backups ) : 0;
 
     <section class="tcuk-card tcuk-card-wide tcuk-wizard-card" id="tcuk-setup-wizard-card">
         <div class="tcuk-wizard-title-row">
-            <h2><?php esc_html_e( 'Auto Setup Wizard', 'tcuk-all-in-one-migrator' ); ?></h2>
+            <h2><?php esc_html_e( 'Setup Wizard', 'tcuk-all-in-one-migrator' ); ?></h2>
             <button type="button" class="button-link tcuk-wizard-close" id="tcuk-wizard-close" aria-label="<?php esc_attr_e( 'Close setup wizard card', 'tcuk-all-in-one-migrator' ); ?>">&times;</button>
         </div>
         <p class="description"><?php esc_html_e( 'Runs production preflight checks for server capabilities, backup access, and API Push connectivity (including destination URL/key probe when configured). Run this before first migration.', 'tcuk-all-in-one-migrator' ); ?></p>
@@ -173,6 +177,7 @@ $backup_count       = is_array( $backups ) ? count( $backups ) : 0;
             <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="tcuk-compact-form">
                 <input type="hidden" name="action" value="tcuk_migrator_repair_fse">
                 <?php wp_nonce_field( 'tcuk_migrator_repair_fse' ); ?>
+                <p class="description"><?php esc_html_e( 'Repairs Full Site Editing theme files and templates after a push or restore if the target theme looks broken or incomplete.', 'tcuk-all-in-one-migrator' ); ?></p>
                 <p><button class="button tcuk-submit" type="submit" <?php disabled( empty( $is_premium ) ); ?>><?php esc_html_e( 'Run FSE Repair', 'tcuk-all-in-one-migrator' ); ?></button></p>
             </form>
         </section>
