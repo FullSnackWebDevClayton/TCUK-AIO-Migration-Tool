@@ -1,0 +1,44 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs / temp
+*.log
+*.tmp
+*.bak
+*.cache
+
+# Archives / build artifacts
+*.zip
+*.tar
+*.gz
+*.tgz
+*.rar
+
+# Environment / secrets
+.env
+.env.*
+*.pem
+*.key
+*.crt
+
+# Dependency caches (if ever used)
+node_modules/
+vendor/
+
+# Private monetization services
+_private/license-server/
+
+# WordPress/runtime artifacts (defensive)
+wp-content/uploads/
+wp-content/upgrade/
+wp-content/cache/
+wp-content/debug.log
+
+# Plugin-specific runtime artifacts
+tcuk-migrator-backups/
+tcuk-migrator-temp/
