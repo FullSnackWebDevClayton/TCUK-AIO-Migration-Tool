@@ -102,12 +102,11 @@ This plugin now checks GitHub Releases for new versions.
    - Header `Version:`
    - `TCUK_MIGRATOR_VERSION` constant
 2. Commit and push to `main`.
-3. Create a Git tag matching version (recommended format: `v1.0.1`) and push tag.
-4. Create GitHub Release from that tag.
-5. Upload a plugin ZIP asset where root folder is exactly:
-   - `tcuk-all-in-one-migrator/`
-6. In WordPress admin, click **Dashboard → Updates → Check Again**.
-7. Go to **Plugins** and update when the new version appears.
+3. On push to `main`, GitHub Actions compares plugin version to the latest GitHub release:
+   - If version increased, it auto-builds and publishes a new release ZIP asset.
+   - If version is unchanged (or lower), it skips release creation.
+4. In WordPress admin, click **Dashboard → Updates → Check Again**.
+5. Go to **Plugins** and update when the new version appears.
 
 ### Important packaging rule
 

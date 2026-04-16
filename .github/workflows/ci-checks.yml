@@ -1,0 +1,44 @@
+name: CI Checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+
+      - name: PHP syntax lint
+        run: |
+          set -euo pipefail
+          php -l tcuk-all-in-one-migrator.php
+
+          while IFS= read -r -d '' file; do
+            php -l "$file"
+          done < <(find includes templates -type f -name "*.php" -print0)
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: JavaScript syntax check
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            node --check "$file"
+          done < <(find assets/js -type f -name "*.js" -print0)

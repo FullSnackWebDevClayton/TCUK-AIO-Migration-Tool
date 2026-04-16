@@ -1,0 +1,121 @@
+name: Release Plugin
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set release variables
+        run: |
+          echo "SLUG=tcuk-all-in-one-migrator" >> "$GITHUB_ENV"
+          echo "REPO=${GITHUB_REPOSITORY}" >> "$GITHUB_ENV"
+
+      - name: Validate plugin version fields
+        id: validate_version
+        run: |
+          set -euo pipefail
+
+          PLUGIN_VERSION=$(grep -E '^ \* Version:' tcuk-all-in-one-migrator.php | head -n1 | sed -E 's/^ \* Version:[[:space:]]*//')
+          CONST_VERSION=$(grep -E "^define\( 'TCUK_MIGRATOR_VERSION', '[^']+' \);" tcuk-all-in-one-migrator.php | head -n1 | sed -E "s/^define\( 'TCUK_MIGRATOR_VERSION', '([^']+)' \);/\1/")
+
+          echo "Header version: ${PLUGIN_VERSION}"
+          echo "Constant version: ${CONST_VERSION}"
+
+          if [[ -z "${PLUGIN_VERSION}" || -z "${CONST_VERSION}" ]]; then
+            echo "Could not parse plugin versions from tcuk-all-in-one-migrator.php"
+            exit 1
+          fi
+
+          if [[ "${PLUGIN_VERSION}" != "${CONST_VERSION}" ]]; then
+            echo "Plugin header version and TCUK_MIGRATOR_VERSION constant do not match."
+            exit 1
+          fi
+
+          echo "plugin_version=${PLUGIN_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "release_tag=v${PLUGIN_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Decide whether to release
+        id: release_decision
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          PLUGIN_VERSION='${{ steps.validate_version.outputs.plugin_version }}'
+          RELEASE_TAG='${{ steps.validate_version.outputs.release_tag }}'
+
+          LATEST_TAG=$(gh api "repos/${REPO}/releases/latest" --jq .tag_name 2>/dev/null || true)
+
+          if [[ -z "${LATEST_TAG}" || "${LATEST_TAG}" == "null" ]]; then
+            echo "No existing release found. Will create ${RELEASE_TAG}."
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          LATEST_VERSION="${LATEST_TAG#v}"
+          echo "Latest release tag: ${LATEST_TAG}"
+          echo "Plugin version: ${PLUGIN_VERSION}"
+
+          if [[ "${PLUGIN_VERSION}" == "${LATEST_VERSION}" ]]; then
+            echo "Version unchanged. Skipping release."
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          HIGHEST_VERSION=$(printf '%s\n%s\n' "${LATEST_VERSION}" "${PLUGIN_VERSION}" | sort -V | tail -n1)
+
+          if [[ "${HIGHEST_VERSION}" != "${PLUGIN_VERSION}" ]]; then
+            echo "Plugin version is lower than latest release. Skipping release."
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Version increased. Will create/update ${RELEASE_TAG}."
+          echo "should_release=true" >> "$GITHUB_OUTPUT"
+
+      - name: Build plugin ZIP
+        if: steps.release_decision.outputs.should_release == 'true'
+        run: |
+          set -euo pipefail
+
+          mkdir -p dist staging
+
+          mkdir -p "staging/${SLUG}"
+          cp tcuk-all-in-one-migrator.php "staging/${SLUG}/"
+          cp LICENSE "staging/${SLUG}/"
+          rsync -a assets/ "staging/${SLUG}/assets/"
+          rsync -a includes/ "staging/${SLUG}/includes/"
+          rsync -a templates/ "staging/${SLUG}/templates/"
+
+          (
+            cd staging
+            zip -r "../dist/${SLUG}-${{ steps.validate_version.outputs.release_tag }}.zip" "${SLUG}" -x '*.DS_Store'
+          )
+
+          ls -lah dist
+
+      - name: Create or update GitHub Release
+        if: steps.release_decision.outputs.should_release == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.validate_version.outputs.release_tag }}
+          target_commitish: ${{ github.sha }}
+          generate_release_notes: true
+          overwrite_files: true
+          files: |
+            dist/*.zip

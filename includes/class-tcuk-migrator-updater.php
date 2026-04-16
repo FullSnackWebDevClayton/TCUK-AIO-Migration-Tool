@@ -148,7 +148,7 @@ class TCUK_Migrator_Updater {
             'slug'          => $this->plugin_slug,
             'version'       => $version,
             'author'        => '<a href="https://techcentreuk.co.uk">Tech Centre UK</a>',
-            'homepage'      => (string) ( $release['html_url'] ?? ( 'https://github.com/' . $this->repo ) ),
+            'homepage'      => 'https://aiomigrator.com/',
             'download_link' => $download_link,
             'last_updated'  => (string) ( $release['published_at'] ?? gmdate( 'c' ) ),
             'icons'         => array(

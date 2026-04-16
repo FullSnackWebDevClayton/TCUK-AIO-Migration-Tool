@@ -81,6 +81,7 @@ $backup_count       = is_array( $backups ) ? count( $backups ) : 0;
         </form>
     </section>
 
+    <?php if ( ! empty( $is_premium ) ) : ?>
     <section class="tcuk-card tcuk-card-wide tcuk-wizard-card" id="tcuk-setup-wizard-card">
         <div class="tcuk-wizard-title-row">
             <h2><?php esc_html_e( 'Setup Wizard', 'tcuk-all-in-one-migrator' ); ?></h2>
@@ -121,8 +122,10 @@ $backup_count       = is_array( $backups ) ? count( $backups ) : 0;
             </div>
         <?php endif; ?>
     </section>
+    <?php endif; ?>
 
-    <div class="tcuk-grid">
+    <div class="tcuk-grid <?php echo empty( $is_premium ) ? 'tcuk-grid-free' : ''; ?>">
+        <?php if ( ! empty( $is_premium ) ) : ?>
         <section class="tcuk-card tcuk-card-wide">
             <h2><?php esc_html_e( 'Connection Settings', 'tcuk-all-in-one-migrator' ); ?></h2>
             <p class="description"><?php esc_html_e( 'Save once, then use these defaults across API Push and GitHub actions.', 'tcuk-all-in-one-migrator' ); ?></p>
@@ -217,8 +220,9 @@ $backup_count       = is_array( $backups ) ? count( $backups ) : 0;
                 <p class="description"><?php esc_html_e( 'To change these values, edit Connection Settings above and save first.', 'tcuk-all-in-one-migrator' ); ?></p>
             </form>
         </section>
+        <?php endif; ?>
 
-        <section class="tcuk-card tcuk-card-wide">
+        <section class="tcuk-card <?php echo empty( $is_premium ) ? 'tcuk-card-free-backup' : 'tcuk-card-wide'; ?>">
             <h2><?php esc_html_e( 'Backups', 'tcuk-all-in-one-migrator' ); ?></h2>
 
             <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="tcuk-action-form">
@@ -228,10 +232,12 @@ $backup_count       = is_array( $backups ) ? count( $backups ) : 0;
                 <p><strong><?php esc_html_e( 'Create Backup', 'tcuk-all-in-one-migrator' ); ?></strong></p>
                 <p class="tcuk-checkbox-row">
                     <label><input type="checkbox" name="backup_components[]" value="theme" checked> <?php esc_html_e( 'Themes', 'tcuk-all-in-one-migrator' ); ?></label>
-                    <label><input type="checkbox" name="backup_components[]" value="plugins" checked <?php disabled( empty( $is_premium ) ); ?>> <?php esc_html_e( 'Plugins', 'tcuk-all-in-one-migrator' ); ?></label>
-                    <label><input type="checkbox" name="backup_components[]" value="uploads" checked <?php disabled( empty( $is_premium ) ); ?>> <?php esc_html_e( 'Uploads', 'tcuk-all-in-one-migrator' ); ?></label>
-                    <label><input type="checkbox" name="backup_components[]" value="mu-plugins" <?php disabled( empty( $is_premium ) ); ?>> <?php esc_html_e( 'MU Plugins', 'tcuk-all-in-one-migrator' ); ?></label>
-                    <label><input type="checkbox" name="backup_components[]" value="database" checked <?php disabled( empty( $is_premium ) ); ?>> <?php esc_html_e( 'Database', 'tcuk-all-in-one-migrator' ); ?></label>
+                    <?php if ( ! empty( $is_premium ) ) : ?>
+                        <label><input type="checkbox" name="backup_components[]" value="plugins" checked> <?php esc_html_e( 'Plugins', 'tcuk-all-in-one-migrator' ); ?></label>
+                        <label><input type="checkbox" name="backup_components[]" value="uploads" checked> <?php esc_html_e( 'Uploads', 'tcuk-all-in-one-migrator' ); ?></label>
+                        <label><input type="checkbox" name="backup_components[]" value="mu-plugins"> <?php esc_html_e( 'MU Plugins', 'tcuk-all-in-one-migrator' ); ?></label>
+                        <label><input type="checkbox" name="backup_components[]" value="database" checked> <?php esc_html_e( 'Database', 'tcuk-all-in-one-migrator' ); ?></label>
+                    <?php endif; ?>
                 </p>
                 <p class="tcuk-field">
                     <label><?php esc_html_e( 'Themes (optional selection)', 'tcuk-all-in-one-migrator' ); ?></label>
@@ -241,6 +247,7 @@ $backup_count       = is_array( $backups ) ? count( $backups ) : 0;
                         <?php endforeach; ?>
                     </select>
                 </p>
+                <?php if ( ! empty( $is_premium ) ) : ?>
                 <p class="tcuk-field">
                     <label><?php esc_html_e( 'Plugin mode', 'tcuk-all-in-one-migrator' ); ?></label>
                     <select name="backup_plugin_mode">
@@ -272,6 +279,7 @@ $backup_count       = is_array( $backups ) ? count( $backups ) : 0;
                     <label><input type="checkbox" name="backup_db_groups[]" value="comments"> <?php esc_html_e( 'Comments', 'tcuk-all-in-one-migrator' ); ?></label>
                 </p>
                 <p class="tcuk-field tcuk-backup-custom-tables-wrap"><label><?php esc_html_e( 'Custom DB tables (comma/new line)', 'tcuk-all-in-one-migrator' ); ?></label><textarea name="backup_custom_tables" class="widefat" rows="2"></textarea></p>
+                <?php endif; ?>
 
                 <p><button class="button button-primary tcuk-submit" type="submit"><?php esc_html_e( 'Create Backup File', 'tcuk-all-in-one-migrator' ); ?></button></p>
             </form>
@@ -317,10 +325,12 @@ $backup_count       = is_array( $backups ) ? count( $backups ) : 0;
                                     <?php wp_nonce_field( 'tcuk_migrator_backup_restore' ); ?>
                                     <input type="hidden" name="backup_file" value="<?php echo esc_attr( $backup['name'] ); ?>">
                                     <label><input type="checkbox" name="restore_components[]" value="theme" checked> <?php esc_html_e( 'Themes', 'tcuk-all-in-one-migrator' ); ?></label>
-                                    <label><input type="checkbox" name="restore_components[]" value="plugins" checked <?php disabled( empty( $is_premium ) ); ?>> <?php esc_html_e( 'Plugins', 'tcuk-all-in-one-migrator' ); ?></label>
-                                    <label><input type="checkbox" name="restore_components[]" value="uploads" <?php disabled( empty( $is_premium ) ); ?>> <?php esc_html_e( 'Uploads', 'tcuk-all-in-one-migrator' ); ?></label>
-                                    <label><input type="checkbox" name="restore_components[]" value="mu-plugins" <?php disabled( empty( $is_premium ) ); ?>> <?php esc_html_e( 'MU Plugins', 'tcuk-all-in-one-migrator' ); ?></label>
-                                    <label><input type="checkbox" name="restore_components[]" value="database" <?php disabled( empty( $is_premium ) ); ?>> <?php esc_html_e( 'Database', 'tcuk-all-in-one-migrator' ); ?></label>
+                                    <?php if ( ! empty( $is_premium ) ) : ?>
+                                        <label><input type="checkbox" name="restore_components[]" value="plugins" checked> <?php esc_html_e( 'Plugins', 'tcuk-all-in-one-migrator' ); ?></label>
+                                        <label><input type="checkbox" name="restore_components[]" value="uploads"> <?php esc_html_e( 'Uploads', 'tcuk-all-in-one-migrator' ); ?></label>
+                                        <label><input type="checkbox" name="restore_components[]" value="mu-plugins"> <?php esc_html_e( 'MU Plugins', 'tcuk-all-in-one-migrator' ); ?></label>
+                                        <label><input type="checkbox" name="restore_components[]" value="database"> <?php esc_html_e( 'Database', 'tcuk-all-in-one-migrator' ); ?></label>
+                                    <?php endif; ?>
                                     <button type="submit" class="button tcuk-submit"><?php esc_html_e( 'Restore', 'tcuk-all-in-one-migrator' ); ?></button>
                                 </form>
 
@@ -338,5 +348,57 @@ $backup_count       = is_array( $backups ) ? count( $backups ) : 0;
                 </div>
             <?php endif; ?>
         </section>
+
+        <?php if ( empty( $is_premium ) ) : ?>
+            <section class="tcuk-card tcuk-card-free-premium">
+                <div class="tcuk-premium-head">
+                    <span class="tcuk-premium-pill"><?php esc_html_e( 'Premium', 'tcuk-all-in-one-migrator' ); ?></span>
+                    <h2><?php esc_html_e( 'Premium Features (Optional Upgrade)', 'tcuk-all-in-one-migrator' ); ?></h2>
+                </div>
+                <p class="tcuk-premium-intro"><?php esc_html_e( 'Unlock advanced migration tools for full environment deployment workflows.', 'tcuk-all-in-one-migrator' ); ?></p>
+                <ul class="tcuk-premium-list">
+                    <li><span class="tcuk-premium-check" aria-hidden="true">✓</span><span><?php esc_html_e( 'API Push migration flow', 'tcuk-all-in-one-migrator' ); ?></span></li>
+                    <li><span class="tcuk-premium-check" aria-hidden="true">✓</span><span><?php esc_html_e( 'GitHub theme pull', 'tcuk-all-in-one-migrator' ); ?></span></li>
+                    <li><span class="tcuk-premium-check" aria-hidden="true">✓</span><span><?php esc_html_e( 'Setup Wizard checks', 'tcuk-all-in-one-migrator' ); ?></span></li>
+                    <li><span class="tcuk-premium-check" aria-hidden="true">✓</span><span><?php esc_html_e( 'FSE repair actions', 'tcuk-all-in-one-migrator' ); ?></span></li>
+                    <li><span class="tcuk-premium-check" aria-hidden="true">✓</span><span><?php esc_html_e( 'Advanced selective migration components', 'tcuk-all-in-one-migrator' ); ?></span></li>
+                </ul>
+                <div class="tcuk-pricing-cards">
+                    <div class="tcuk-pricing-card">
+                        <span class="tcuk-pricing-badge tcuk-pricing-badge--ghost" aria-hidden="true">&nbsp;</span>
+                        <div class="tcuk-pricing-label"><?php esc_html_e( 'Monthly', 'tcuk-all-in-one-migrator' ); ?></div>
+                        <div class="tcuk-pricing-price">
+                            <span class="tcuk-pricing-amount">£9</span>
+                            <span class="tcuk-pricing-period">/mo</span>
+                        </div>
+                        <p class="tcuk-pricing-desc"><?php esc_html_e( 'Billed monthly, cancel anytime.', 'tcuk-all-in-one-migrator' ); ?></p>
+                        <a href="https://buy.stripe.com/bJecN61lA2Ae1hS9Qp4c800" target="_blank" rel="noopener noreferrer" class="tcuk-pricing-btn tcuk-pricing-btn--outline">
+                            <?php esc_html_e( 'Start Monthly', 'tcuk-all-in-one-migrator' ); ?>
+                        </a>
+                    </div>
+                    <div class="tcuk-pricing-card tcuk-pricing-card--featured">
+                        <span class="tcuk-pricing-badge"><?php esc_html_e( 'Best Value', 'tcuk-all-in-one-migrator' ); ?></span>
+                        <div class="tcuk-pricing-label"><?php esc_html_e( 'Annual', 'tcuk-all-in-one-migrator' ); ?></div>
+                        <div class="tcuk-pricing-price">
+                            <span class="tcuk-pricing-amount">£89</span>
+                            <span class="tcuk-pricing-period">/yr</span>
+                        </div>
+                        <p class="tcuk-pricing-desc"><?php esc_html_e( 'Save vs monthly. Billed once a year.', 'tcuk-all-in-one-migrator' ); ?></p>
+                        <a href="https://buy.stripe.com/00w6oIfcq0s6aSs1jT4c801" target="_blank" rel="noopener noreferrer" class="tcuk-pricing-btn tcuk-pricing-btn--primary">
+                            <?php esc_html_e( 'Start Annual', 'tcuk-all-in-one-migrator' ); ?>
+                        </a>
+                    </div>
+                </div>
+                <p class="tcuk-pricing-footer description">
+                    <?php
+                    printf(
+                        wp_kses_post( __( 'Premium plans are optional. Billing terms and any applicable cancellation/refund rights are shown at checkout and in our %1$s and %2$s.', 'tcuk-all-in-one-migrator' ) ),
+                        '<a href="https://aiomigrator.com/terms" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Terms', 'tcuk-all-in-one-migrator' ) . '</a>',
+                        '<a href="https://aiomigrator.com/privacy" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Privacy Policy', 'tcuk-all-in-one-migrator' ) . '</a>'
+                    );
+                    ?>
+                </p>
+            </section>
+        <?php endif; ?>
     </div>
 </div>

@@ -49,6 +49,237 @@
     min-width: 0;
 }
 
+.tcuk-migrator-wrap .tcuk-grid.tcuk-grid-free {
+    display: flex;
+    gap: 22px;
+    align-items: stretch;
+    margin-top: 18px;
+}
+
+.tcuk-migrator-wrap .tcuk-grid.tcuk-grid-free > .tcuk-card-free-backup {
+    flex: 0 1 68%;
+    min-width: 0;
+}
+
+.tcuk-migrator-wrap .tcuk-grid.tcuk-grid-free > .tcuk-card-free-premium {
+    flex: 0 1 32%;
+    min-width: 320px;
+    max-width: 420px;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(160deg, #ffffff 0%, #f5f9ff 62%, #eef5ff 100%);
+    border-color: #bfd4ea;
+    box-shadow: 0 10px 28px rgba(10, 73, 135, 0.10);
+}
+
+.tcuk-premium-head {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.tcuk-premium-pill {
+    display: inline-flex;
+    width: fit-content;
+    padding: 4px 11px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    background: #0a66c2;
+    color: #ffffff;
+}
+
+.tcuk-card-free-premium h2 {
+    margin-bottom: 2px;
+}
+
+.tcuk-premium-intro {
+    margin: 0 0 12px;
+    color: #304457;
+    font-weight: 500;
+}
+
+.tcuk-premium-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    margin-bottom: 8px;
+}
+
+.tcuk-premium-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid #d8e4f1;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.78);
+}
+
+.tcuk-premium-check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    background: #0a66c2;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    flex: 0 0 18px;
+    margin-top: 1px;
+}
+
+.tcuk-pricing-cards {
+    display: flex;
+    gap: 10px;
+    margin-top: auto;
+    padding-top: 12px;
+}
+
+.tcuk-pricing-card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    text-align: center;
+    padding: 14px 12px;
+    border: 1px solid #d8e4f1;
+    border-radius: 11px;
+    background: rgba(255,255,255,0.82);
+    gap: 6px;
+    position: relative;
+}
+
+.tcuk-pricing-card--featured {
+    border-color: #0a66c2;
+    background: linear-gradient(160deg, #f0f7ff 0%, #e8f1fd 100%);
+    box-shadow: 0 4px 16px rgba(10, 73, 194, 0.13);
+}
+
+.tcuk-pricing-badge {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    background: #0a66c2;
+    color: #fff;
+    margin-bottom: 2px;
+}
+
+.tcuk-pricing-badge--ghost {
+    background: transparent;
+    color: transparent;
+    pointer-events: none;
+    user-select: none;
+}
+
+.tcuk-pricing-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #546376;
+}
+
+.tcuk-pricing-price {
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+}
+
+.tcuk-pricing-amount {
+    font-size: 28px;
+    font-weight: 800;
+    color: #0a3060;
+    line-height: 1;
+}
+
+.tcuk-pricing-period {
+    font-size: 13px;
+    color: #7a8fa6;
+    font-weight: 500;
+}
+
+.tcuk-pricing-desc {
+    margin: 0;
+    font-size: 11px;
+    color: #637080;
+    line-height: 1.4;
+}
+
+.tcuk-pricing-btn {
+    display: block;
+    margin: 4px auto 0;
+    width: calc(100% - 16px);
+    box-sizing: border-box;
+    padding: 8px 10px;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform .16s ease, box-shadow .16s ease, background-color .16s ease, color .16s ease, border-color .16s ease;
+}
+
+.tcuk-pricing-btn:hover {
+    transform: translateY(-1px);
+    text-decoration: none;
+}
+
+.tcuk-pricing-btn:focus-visible {
+    outline: 2px solid #0a66c2;
+    outline-offset: 2px;
+}
+
+.tcuk-pricing-btn--outline {
+    border: 2px solid #0a66c2;
+    color: #0a66c2;
+    background: transparent;
+}
+
+.tcuk-pricing-btn--outline:hover {
+    border-color: #0854a0;
+    color: #0854a0;
+    background: rgba(10, 102, 194, 0.08);
+    box-shadow: 0 8px 18px rgba(10, 102, 194, 0.18);
+}
+
+.tcuk-pricing-btn--primary {
+    border: 2px solid #0a66c2;
+    background: #0a66c2;
+    color: #ffffff;
+}
+
+.tcuk-pricing-btn--primary:hover {
+    border-color: #084f95;
+    background: #084f95;
+    color: #ffffff;
+    box-shadow: 0 10px 22px rgba(8, 79, 149, 0.28);
+}
+
+.tcuk-pricing-footer {
+    margin: 8px 0 0;
+    font-size: 11px;
+    color: #7a8fa6;
+    text-align: center;
+    font-style: italic;
+}
+
 .tcuk-page-head {
     margin: 8px 0 16px;
     background: linear-gradient(135deg, #ffffff 0%, #f7faff 100%);
@@ -513,9 +744,48 @@
 }
 
 .tcuk-table-scroll {
+    position: relative;
     width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+}
+
+.tcuk-table-scroll.tcuk-scroll-cue::after {
+    content: '↔';
+    position: absolute;
+    right: 10px;
+    top: 9px;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: rgba(10, 102, 194, 0.78);
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    box-shadow: 0 6px 14px rgba(10, 102, 194, 0.20);
+    pointer-events: none;
+    z-index: 2;
+    animation: tcuk-scroll-cue-pulse 1.55s ease-in-out infinite;
+}
+
+@keyframes tcuk-scroll-cue-pulse {
+    0%,
+    100% {
+        transform: translateX(0) scale(1);
+        opacity: 0.72;
+    }
+    35% {
+        transform: translateX(-2px) scale(1.05);
+        opacity: 0.9;
+    }
+    70% {
+        transform: translateX(2px) scale(0.98);
+        opacity: 0.8;
+    }
 }
 
 .tcuk-table-scroll > table.widefat {
@@ -625,5 +895,19 @@
     .tcuk-mode-controls {
         flex-direction: column;
         align-items: flex-start;
+    }
+
+    .tcuk-migrator-wrap .tcuk-grid.tcuk-grid-free {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        margin-top: 16px;
+    }
+
+    .tcuk-migrator-wrap .tcuk-grid.tcuk-grid-free > .tcuk-card-free-backup,
+    .tcuk-migrator-wrap .tcuk-grid.tcuk-grid-free > .tcuk-card-free-premium {
+        flex: none;
+        min-width: 0;
+        max-width: none;
     }
 }

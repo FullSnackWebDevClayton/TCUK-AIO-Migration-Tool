@@ -46,6 +46,23 @@
         }
     });
 
+    const scrollTables = root.querySelectorAll('.tcuk-table-scroll');
+    const updateScrollCue = (element) => {
+        const hasOverflow = (element.scrollWidth - element.clientWidth) > 8;
+        const canScrollRight = element.scrollLeft < (element.scrollWidth - element.clientWidth - 8);
+
+        element.classList.toggle('tcuk-scroll-cue', hasOverflow && canScrollRight);
+    };
+
+    scrollTables.forEach((element) => {
+        updateScrollCue(element);
+        element.addEventListener('scroll', () => updateScrollCue(element), { passive: true });
+    });
+
+    window.addEventListener('resize', () => {
+        scrollTables.forEach((element) => updateScrollCue(element));
+    });
+
     const bindConditionalSection = ({
         scope,
         modeSelector,
