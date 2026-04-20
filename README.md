@@ -1,13 +1,144 @@
 # TCUK All In One Migrator
 
-A WordPress admin plugin for:
+Concise, practical migration and backup plugin for WordPress. Supports zip backups, token-auth API Push, GitHub theme pulls and SSH transfers.
 
-- **Upload backup zip workflow** (manual transfer)
-- **Token-auth REST API push** (one-click push local → live, no SSH2)
-- **Selective imports/exports** (theme, plugins, uploads, mu-plugins, database)
-- **Granular DB selection** (all tables, grouped tables, custom table list)
-- **GitHub theme pull** into a target theme folder
-- **Backup to file** (`.zip`) and restore/download/delete
+Features
+
+- Zip backups: create, download, upload and restore selective components (theme, plugins, uploads, database, mu-plugins).
+- API Push: token-authenticated REST endpoint to push/move backups between sites (includes endpoint probe and fallback variants).
+- SSH Transfers: optional SSH-based remote backups and restores with remote directory probing and key management.
+- GitHub theme pull: install a theme from `owner/repo` (branch and subdirectory supported).
+- Safe DB handling: serialized/JSON-aware search-and-replace plus table-prefix remapping during restores.
+- Admin UX: AJAX-first flows, toast notifications, and responsive two-column SSH key layout.
+
+Installation
+
+1. Upload `tcuk-all-in-one-migrator` to `wp-content/plugins/` or install via the Plugins screen.
+2. Activate the plugin and open **TCUK Migrator** in the admin menu.
+
+Quick Start
+
+1. Configure **Connection Settings** (API Push destination/receive, SSH if used, and GitHub repo if required).
+2. Run the **Setup Wizard** to validate environment and endpoint connectivity.
+3. Make a small test backup (theme-only) and run a restore on a staging site.
+
+Premium & Purchase
+
+Purchase premium features, view documentation, and get priority support at:
+
+https://aiomigrator.co.uk
+
+Notes & Safety
+
+- Always create and download a backup before any destructive action.
+- Only run restores/migrations with administrator access.
+- Large restores may require increased PHP memory/time or staging-based runs.
+
+Troubleshooting (high level)
+
+- API Push 404: ensure the receive endpoint is enabled on destination and flush permalinks.
+- API Push 403: enable the receive endpoint and use the destination receive token as the source API Push Key.
+- API Push 500: check `wp-content/debug.log` and server PHP logs; try a smaller component set to isolate the error.
+
+Changelog
+
+- v1.2.0 — UI & release
+  - AJAX-first admin flows and toast notifications
+  - Remote directory probing and remote-backup select improvements
+  - Responsive layout fixes and SSH/UI polishing
+
+Development & Updates
+
+- Plugin updates use GitHub Releases. Keep the folder name `tcuk-all-in-one-migrator` for auto-update compatibility.
+
+Support
+
+- Premium sales, documentation and priority support: https://aiomigrator.co.uk
+- Report bugs or request features via the GitHub repo.
+
+License
+
+This plugin is licensed under the GNU General Public License v2.0 or later.
+
+Version
+
+`1.2.0`
+# TCUK All In One Migrator
+
+Powerful WordPress migration, backup and restore plugin with multiple transfer options (local upload, API push, GitHub theme pull, SSH Transfer).
+
+Key capabilities:
+
+- Create and restore zip backups (selective components: theme, plugins, uploads, database, mu-plugins)
+- One-click API Push (token-authenticated REST receive endpoint) for automated local→live & live→live transfers
+- GitHub theme pull (owner/repo, branch, optional subdirectory)
+- Granular DB selection and safe serialized/JSON-aware search/replace during restores
+- Admin UI improvements: AJAX-first flows, toast notifications, remote directory probing, responsive SSH key layout
+
+## Installation
+
+1. Copy the plugin folder to `wp-content/plugins/tcuk-all-in-one-migrator` OR Add plugin in the Wordpress Plugins screen.
+2. Activate **TCUK All In One Migrator** from the WordPress Plugins screen.
+3. Open the plugin from the admin menu: **TCUK Migrator**.
+
+## Quick Start
+
+1. Fill out **Connection Settings** (API Push destination/receive settings, GitHub repo if used).
+2. Run the **Setup Wizard** to validate environment and endpoint connectivity.
+3. Make a test backup (theme-only is a good start) and test restore on a staging environment.
+
+## Notable Admin UX Improvements (v1.2.0+)
+
+- AJAX-first admin flows that avoid full page reloads for a faster UX.
+- Global toast helper for success/error/info notifications.
+- Remote directory probing for SSH/remote backup selections (client probes candidates; server value remains authoritative).
+- Two-column SSH key layout on wide screens; stacks on small screens.
+
+## Premium & Purchase
+
+For premium features, licensing and support visit: https://aiomigrator.co.uk
+
+- Purchase premium, view documentation, and get priority support at the site above.
+
+## Usage Notes & Safety
+
+- Always create and download a backup before performing restores or destructive actions.
+- Use admin-only accounts when running migrations.
+- Large restores may hit host timeouts; test on staging and increase PHP memory/time if needed.
+
+## Troubleshooting (short)
+
+- API Push 404: ensure the destination plugin is active and the receive endpoint is enabled; flush permalinks (Settings → Permalinks → Save).
+- API Push 403: enable the receive endpoint and copy the destination receive token to source settings.
+- API Push 500: check `wp-content/debug.log` and server PHP logs; try smaller component restores to isolate the failure.
+
+## Changelog
+
+- v1.2.0 — UI & release
+  - AJAX-first admin flows and toast notifications
+  - Remote directory probing and remote-backup select improvements
+  - Responsive layout fixes (two-column SSH keys, Free-mode layout)
+  - Various semantic HTML fixes and polishing
+
+## Development & Updates
+
+- The plugin uses GitHub Releases for update packages. Keep the plugin folder name as `tcuk-all-in-one-migrator` for auto-update compatibility.
+
+## Support & Contact
+
+- Premium sales, documentation and priority support: https://aiomigrator.co.uk
+- Open an issue or PR on the GitHub repo for bugs and feature requests.
+
+## License
+
+This plugin is licensed under the GNU General Public License v2.0 or later (GPL-2.0-or-later).
+
+- License URI: https://www.gnu.org/licenses/gpl-2.0.html
+- Copyright: TCUK
+
+## Version
+
+`1.2.0`
 
 ## Features
 
@@ -72,11 +203,6 @@ Fallback endpoint format (for environments where rewrite/permalinks do not expos
 
 - `https://your-site.com/?rest_route=/tcuk-migrator/v1/receive-backup`
 
-## Installation
-
-1. Upload this plugin folder to `wp-content/plugins/`.
-2. Activate **TCUK All In One Migrator** in WordPress admin.
-3. Open **TCUK Migrator** in the left admin menu.
 
 ## GitHub-Based Plugin Updates (Auto Update Alerts)
 
