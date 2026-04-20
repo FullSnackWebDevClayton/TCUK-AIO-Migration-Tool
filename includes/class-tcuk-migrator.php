@@ -11,6 +11,7 @@ class TCUK_Migrator {
     public $database;
     public $remote_api;
     public $github_sync;
+    public $ssh_sync;
     public $backup_manager;
     public $license;
     public $updater;
@@ -32,6 +33,7 @@ class TCUK_Migrator {
         $this->license        = new TCUK_Migrator_License();
         $this->remote_api     = new TCUK_Migrator_Remote_API( $this );
         $this->github_sync    = new TCUK_Migrator_GitHub_Sync( $this->filesystem );
+        $this->ssh_sync       = new TCUK_Migrator_SSH_Sync( $this->filesystem );
         $this->backup_manager = new TCUK_Migrator_Backup_Manager( $this->filesystem, $this->database, $this->license );
         $this->updater        = new TCUK_Migrator_Updater( TCUK_MIGRATOR_FILE );
         $this->admin          = new TCUK_Migrator_Admin( $this );
@@ -43,6 +45,7 @@ class TCUK_Migrator {
         require_once TCUK_MIGRATOR_DIR . 'includes/class-tcuk-migrator-license.php';
         require_once TCUK_MIGRATOR_DIR . 'includes/class-tcuk-migrator-remote-api.php';
         require_once TCUK_MIGRATOR_DIR . 'includes/class-tcuk-migrator-github-sync.php';
+        require_once TCUK_MIGRATOR_DIR . 'includes/class-tcuk-migrator-ssh-sync.php';
         require_once TCUK_MIGRATOR_DIR . 'includes/class-tcuk-migrator-backup-manager.php';
         require_once TCUK_MIGRATOR_DIR . 'includes/class-tcuk-migrator-updater.php';
         require_once TCUK_MIGRATOR_DIR . 'includes/class-tcuk-migrator-admin.php';

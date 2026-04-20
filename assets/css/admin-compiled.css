@@ -1,0 +1,76 @@
+/* admin-compiled.css
+   First-pass compiled replacement for Tailwind-derived layout utilities.
+   This file intentionally contains only the core layout components we need
+   (grid/flex helpers, card/container, two-column controls) so we can stop
+   depending on tailwind.css while we migrate fully to Sass.
+*/
+
+.tcuk-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+@media (min-width: 768px) { .tcuk-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.tcuk-card { background: #fff; border: 1px solid rgba(216,222,230,1); border-radius: 8px; padding: 1.25rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,.1); margin-bottom: 1rem; }
+.tcuk-card-wide { grid-column: 1 / -1; margin-bottom: 1.25rem; }
+
+.tcuk-connection-group { border: 1px solid rgba(216,222,230,1); border-radius: 10px; padding: 14px; background: #f9fbff; width: 100%; box-sizing: border-box; }
+
+/* Two-column helper (replacement for tcuk-cols-2) */
+.tcuk-cols-2 { display: flex; gap: 1rem; flex-wrap: wrap; width: 100%; box-sizing: border-box; }
+.tcuk-cols-2 > .tcuk-field { flex: 1 1 100%; min-width: 0; }
+@media (min-width: 768px) { .tcuk-cols-2 > .tcuk-field { flex: 1 1 calc(50% - 0.5rem); } }
+/* Only apply width:100% to text-like controls inside two-column areas (avoid checkboxes/radios) */
+.tcuk-cols-2 input[type="text"], .tcuk-cols-2 input[type="password"], .tcuk-cols-2 input[type="url"], .tcuk-cols-2 input[type="number"], .tcuk-cols-2 select, .tcuk-cols-2 textarea { width: 100%; box-sizing: border-box; }
+
+/* SSH split (two panels) */
+.tcuk-ssh-split { display: flex; gap: 1.75rem; flex-wrap: wrap; align-items: stretch; }
+/* Each side should be full width on small screens and split evenly on larger viewports */
+.tcuk-ssh-split > div { flex: 1 1 100%; min-width: 0; }
+@media (min-width: 768px) { .tcuk-ssh-split > div { flex: 1 1 calc(50% - 0.875rem); } }
+
+/* Form field container */
+.tcuk-field { margin-bottom: 1rem; }
+.tcuk-field label { display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.875rem; color: #1f2937; }
+.tcuk-field input[type="text"], .tcuk-field input[type="password"], .tcuk-field input[type="url"], .tcuk-field input[type="number"], .tcuk-field select, .tcuk-field textarea, .tcuk-field .widefat { max-width: 100%; border: 1px solid rgba(195,204,215,1); border-radius: 8px; padding: 6px 10px; background: #fff; color: #0f1721; box-sizing: border-box; }
+.tcuk-field textarea { min-height: 120px; resize: vertical; }
+
+/* Strong fallback: ensure tcuk-connection-group two-column instance uses full width */
+.tcuk-connection-group .tcuk-cols-2 { width: 100% !important; max-width: none !important; }
+
+/* Utility adjustments */
+.tcuk-table-scroll { position: relative; width: 100%; overflow-x: auto; }
+.tcuk-toast { position: fixed; right: 1.25rem; bottom: 1.25rem; padding: 0.75rem; border-radius: 6px; color: #fff; box-shadow: 0 10px 15px -3px rgba(0,0,0,.1); max-width: 32rem; }
+
+/* Small helpers used by JS */
+.tcuk-hidden { display: none !important; }
+
+/* Ensure legacy "tcuk-grid-free" layout is responsive: wrap on small screens */
+.tcuk-grid.tcuk-grid-free { display: flex; gap: 22px; align-items: stretch; flex-wrap: wrap; }
+.tcuk-grid.tcuk-grid-free > .tcuk-card-free-backup { flex: 1 1 100%; min-width: 0; }
+@media (min-width: 768px) {
+   .tcuk-grid.tcuk-grid-free > .tcuk-card-free-backup { flex: 0 1 68%; }
+}
+
+/* End of compiled rules */
+
+/* Strong mobile overrides to ensure responsive stacking when other rules interfere */
+@media (max-width: 900px) {
+   .tcuk-migrator-wrap .tcuk-grid, .tcuk-migrator-wrap .tcuk-grid * { box-sizing: border-box; }
+   .tcuk-migrator-wrap .tcuk-grid { display: block !important; grid-template-columns: 1fr !important; }
+   .tcuk-migrator-wrap .tcuk-grid > .tcuk-card, .tcuk-migrator-wrap .tcuk-card-wide, .tcuk-migrator-wrap .tcuk-grid > section { width: 100% !important; max-width: 100% !important; margin-left: 0 !important; margin-right: 0 !important; }
+
+   .tcuk-migrator-wrap .tcuk-cols-2 { display: flex !important; flex-direction: column !important; gap: 0.75rem !important; }
+   .tcuk-migrator-wrap .tcuk-cols-2 > .tcuk-field { flex: 1 1 100% !important; min-width: 0 !important; }
+
+   .tcuk-migrator-wrap .tcuk-ssh-split { display: flex !important; flex-direction: column !important; gap: 1rem !important; }
+   .tcuk-migrator-wrap .tcuk-ssh-split > div { flex: 1 1 100% !important; min-width: 0 !important; }
+
+   .tcuk-migrator-wrap .tcuk-connection-group { width: 100% !important; }
+
+   /* Ensure license card stacks and has spacing */
+   .tcuk-migrator-wrap .tcuk-license-card { width: 100% !important; box-sizing: border-box; margin-bottom: 1rem !important; }
+}
+
+@media (max-width: 767px) {
+   /* stronger fallback for narrower screens */
+   .tcuk-migrator-wrap .tcuk-grid { display: block !important; }
+   .tcuk-migrator-wrap .tcuk-cols-2 { flex-direction: column !important; }
+}

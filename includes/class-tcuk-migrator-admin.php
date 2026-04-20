@@ -22,6 +22,9 @@ class TCUK_Migrator_Admin {
         add_action( 'admin_post_tcuk_migrator_repair_fse', array( $this, 'run_repair_fse' ) );
         add_action( 'admin_post_tcuk_migrator_setup_wizard', array( $this, 'run_setup_wizard' ) );
         add_action( 'admin_post_tcuk_migrator_api_push', array( $this, 'run_api_push' ) );
+        add_action( 'admin_post_tcuk_migrator_ssh_test', array( $this, 'run_ssh_test' ) );
+        add_action( 'admin_post_tcuk_migrator_ssh_push', array( $this, 'run_ssh_push' ) );
+        add_action( 'admin_post_tcuk_migrator_ssh_pull', array( $this, 'run_ssh_pull' ) );
         add_action( 'admin_post_tcuk_migrator_github_pull', array( $this, 'run_github_pull' ) );
         add_action( 'admin_post_tcuk_migrator_github_test', array( $this, 'run_github_test' ) );
         add_action( 'admin_post_tcuk_migrator_backup_create', array( $this, 'run_backup_create' ) );
@@ -49,6 +52,7 @@ class TCUK_Migrator_Admin {
         }
 
         $css_file    = TCUK_MIGRATOR_DIR . 'assets/css/admin.css';
+        $compiled_css = TCUK_MIGRATOR_DIR . 'assets/css/admin-compiled.css';
         $js_file     = TCUK_MIGRATOR_DIR . 'assets/js/admin.js';
         $css_version = file_exists( $css_file ) ? (string) filemtime( $css_file ) : TCUK_MIGRATOR_VERSION;
         $js_version  = file_exists( $js_file ) ? (string) filemtime( $js_file ) : TCUK_MIGRATOR_VERSION;
@@ -60,12 +64,32 @@ class TCUK_Migrator_Admin {
             $css_version
         );
 
+        // If a compiled admin CSS file exists (Sass-compiled replacement), enqueue it.
+        if ( file_exists( $compiled_css ) ) {
+            $comp_version = (string) filemtime( $compiled_css );
+            wp_enqueue_style(
+                'tcuk-migrator-compiled',
+                TCUK_MIGRATOR_URL . 'assets/css/admin-compiled.css',
+                array( 'tcuk-migrator-admin' ),
+                $comp_version
+            );
+        }
+
         wp_enqueue_script(
             'tcuk-migrator-admin',
             TCUK_MIGRATOR_URL . 'assets/js/admin.js',
             array(),
             $js_version,
             true
+        );
+        // Localize AJAX URL and nonce for the admin script to ensure availability
+        wp_localize_script(
+            'tcuk-migrator-admin',
+            'tcukMigratorAjax',
+            array(
+                'ajax_url' => admin_url( 'admin-ajax.php' ),
+                'nonce'    => wp_create_nonce( 'tcuk_migrator_nonce' ),
+            )
         );
     }
 
@@ -89,6 +113,7 @@ class TCUK_Migrator_Admin {
         $license_status = $this->plugin->license->get_status();
         $is_premium     = ! empty( $license_status['active'] );
         $license_api_url = $this->plugin->license->get_api_url();
+        $ssh_capabilities = $this->plugin->ssh_sync->get_capabilities();
 
         require TCUK_MIGRATOR_DIR . 'templates/admin-page.php';
     }
@@ -110,27 +135,7 @@ class TCUK_Migrator_Admin {
             return;
         }
 
-        $settings = array(
-            'remote_api_enabled' => ! empty( $_POST['remote_api_enabled'] ) ? 1 : 0,
-            'remote_api_token'   => $this->sanitize_secret_field( $_POST['remote_api_token'] ?? '' ),
-            'remote_push_site_url' => esc_url_raw( wp_unslash( $_POST['remote_push_site_url'] ?? '' ) ),
-            'remote_push_api_key'  => $this->sanitize_secret_field( $_POST['remote_push_api_key'] ?? '' ),
-            'remote_push_verify_ssl' => ! empty( $_POST['remote_push_verify_ssl'] ) ? 1 : 0,
-            'github_repo'        => sanitize_text_field( wp_unslash( $_POST['github_repo'] ?? '' ) ),
-            'github_branch'      => sanitize_text_field( wp_unslash( $_POST['github_branch'] ?? 'main' ) ),
-            'github_theme_slug'  => sanitize_text_field( wp_unslash( $_POST['github_theme_slug'] ?? '' ) ),
-            'github_token'       => $this->sanitize_secret_field( $_POST['github_token'] ?? '' ),
-            'github_repo_subdir' => sanitize_text_field( wp_unslash( $_POST['github_repo_subdir'] ?? '' ) ),
-            'premium_license_key' => $current_settings['premium_license_key'],
-        );
-
-        if ( array_key_exists( 'premium_license_key', $_POST ) ) {
-            $settings['premium_license_key'] = $this->sanitize_secret_field( $_POST['premium_license_key'] ?? '' );
-        }
-
-        if ( ! empty( $settings['remote_api_enabled'] ) && '' === $settings['remote_api_token'] ) {
-            $settings['remote_api_token'] = wp_generate_password( 48, false, false );
-        }
+        $settings = $this->build_connection_settings_from_request( wp_unslash( $_POST ), $current_settings );
 
         update_option( self::OPTION_KEY, $settings, false );
         delete_transient( self::WIZARD_TRANSIENT );
@@ -145,7 +150,16 @@ class TCUK_Migrator_Admin {
 
         try {
             @set_time_limit( 0 );
-            $logs = $this->plugin->github_sync->pull_theme( $this->get_settings(), wp_unslash( $_POST ) );
+            $request_data = wp_unslash( $_POST );
+
+            // Merge live (possibly unsaved) connection settings so the pull
+            // uses values the admin has entered in the Connection Settings UI.
+            $settings = $this->build_connection_settings_from_request( $request_data, $this->get_settings() );
+
+            // Call pull_theme with the merged settings and the raw request so
+            // pull_theme can prefer request values but fall back to settings.
+            $logs = $this->plugin->github_sync->pull_theme( $settings, $request_data );
+
             $this->set_result( true, $logs );
         } catch ( Exception $e ) {
             $this->set_result( false, array( $e->getMessage() ) );
@@ -160,7 +174,9 @@ class TCUK_Migrator_Admin {
 
         try {
             @set_time_limit( 0 );
-            $logs = $this->plugin->github_sync->test_connection( $this->get_settings(), wp_unslash( $_POST ) );
+            $request_data = wp_unslash( $_POST );
+            $settings     = $this->persist_connection_settings_from_request( $request_data );
+            $logs         = $this->plugin->github_sync->test_connection( $settings, $request_data );
             $this->set_result( true, $logs );
         } catch ( Exception $e ) {
             $this->set_result( false, array( $e->getMessage() ) );
@@ -175,7 +191,8 @@ class TCUK_Migrator_Admin {
 
         try {
             @set_time_limit( 0 );
-            $message = $this->probe_remote_push_endpoint( $this->get_settings() );
+            $settings = $this->persist_connection_settings_from_request( wp_unslash( $_POST ) );
+            $message  = $this->probe_remote_push_endpoint( $settings );
             $this->set_result( true, array( 'API Push connection test successful.', $message ) );
         } catch ( Exception $e ) {
             $this->set_result( false, array( $e->getMessage() ) );
@@ -298,6 +315,169 @@ class TCUK_Migrator_Admin {
                     $messages[] = (string) $log;
                 }
             }
+
+            $this->set_result( true, $messages );
+        } catch ( Exception $e ) {
+            $this->set_result( false, array( $e->getMessage() ) );
+        }
+
+        $this->redirect_to_page();
+    }
+
+    public function run_ssh_test() {
+        $this->assert_permissions( 'tcuk_migrator_ssh_test' );
+        $this->assert_premium_feature( 'SSH connection test' );
+
+        try {
+            @set_time_limit( 0 );
+            $settings = $this->persist_connection_settings_from_request( wp_unslash( $_POST ) );
+            $logs     = $this->plugin->ssh_sync->test_connection( $settings );
+            $this->set_result( true, $logs );
+        } catch ( Exception $e ) {
+            $this->set_result( false, array( $e->getMessage() ) );
+        }
+
+        $this->redirect_to_page();
+    }
+
+    public function run_ssh_push() {
+        $this->assert_permissions( 'tcuk_migrator_ssh_push' );
+        $this->assert_premium_feature( 'SSH Push' );
+
+        try {
+            @set_time_limit( 0 );
+
+            // Merge connection settings from the request (unsaved) with current settings so
+            // the operation uses the values shown in the Connection Settings panel without
+            // requiring the user to save them first.
+            $request_data = wp_unslash( $_POST );
+            $settings = $this->build_connection_settings_from_request( $request_data, $this->get_settings() );
+            $backup_input = $this->build_backup_request_from_sync_request( $request_data );
+            $backup_result = $this->plugin->backup_manager->create_backup( $backup_input );
+
+            $backup_file = (string) ( $backup_result['file_name'] ?? '' );
+            if ( '' === $backup_file ) {
+                throw new RuntimeException( 'Unable to create backup file for SSH push.' );
+            }
+
+            $backup_path = $this->plugin->backup_manager->get_backup_file_path( $backup_file );
+            $ssh_logs    = $this->plugin->ssh_sync->upload_backup_file( $backup_path, $backup_file, $settings );
+
+            $messages = array_merge(
+                (array) ( $backup_result['messages'] ?? array() ),
+                $ssh_logs
+            );
+
+            $this->set_result( true, $messages );
+        } catch ( Exception $e ) {
+            $this->set_result( false, array( $e->getMessage() ) );
+        }
+
+        $this->redirect_to_page();
+    }
+
+    public function run_ssh_pull() {
+        $this->assert_permissions( 'tcuk_migrator_ssh_pull' );
+        $this->assert_premium_feature( 'SSH Pull' );
+
+        try {
+            @set_time_limit( 0 );
+
+            // Use connection values provided in the form (unsaved) merged with saved settings
+            // so the pull uses the live Connection Settings values.
+            $request_data     = wp_unslash( $_POST );
+            $settings         = $this->build_connection_settings_from_request( $request_data, $this->get_settings() );
+
+            // If the client probed for remote backups and found a subpath, it will send
+            // `ssh_remote_backup_dir_override`. Merge that probe-derived remainder with
+            // the stored `ssh_remote_backup_dir` (the authoritative wp-content base)
+            // so the final remote path used for listing/downloading is the configured
+            // wp-content path plus the discovered subpath.
+            $override = isset( $request_data['ssh_remote_backup_dir_override'] ) ? trim( (string) $request_data['ssh_remote_backup_dir_override'] ) : '';
+            if ( '' !== $override ) {
+                $configured = rtrim( (string) ( $settings['ssh_remote_backup_dir'] ?? '' ), '/' );
+                if ( '' === $configured ) {
+                    $configured = '/';
+                }
+
+                // Find a sensible join point. Prefer the basename of the configured path
+                // (commonly 'wp-content') and append the remainder found by the probe.
+                $key = trim( (string) basename( $configured ) );
+                $merged = $configured;
+
+                if ( '' !== $key && false !== stripos( $override, '/' . $key ) ) {
+                    $pos = stripos( $override, '/' . $key );
+                    $remainder = substr( $override, $pos + strlen( '/' . $key ) );
+                    $remainder = ltrim( $remainder, '/' );
+                    if ( '' !== $remainder ) {
+                        $merged = rtrim( $configured, '/' ) . '/' . $remainder;
+                    }
+                } else {
+                    // Fallback: treat override as a relative suffix and append it.
+                    $clean_override = ltrim( $override, '/' );
+                    if ( '' !== $clean_override ) {
+                        $merged = rtrim( $configured, '/' ) . '/' . $clean_override;
+                    } else {
+                        // If override is empty after cleaning, keep configured.
+                        $merged = $configured;
+                    }
+                }
+
+                // Apply merged path back into settings so downstream SSH code uses it.
+                $settings['ssh_remote_backup_dir'] = $merged;
+            }
+            $remote_file_name_raw = trim( (string) ( $request_data['ssh_remote_backup_file'] ?? '' ) );
+
+            // If no filename provided, try to auto-select the latest remote backup
+            if ( '' === $remote_file_name_raw ) {
+                $remote_dir = rtrim( (string) ( $settings['ssh_remote_backup_dir'] ?? '' ), '/' );
+                if ( '' === $remote_dir ) {
+                    $remote_dir = '/';
+                }
+
+                try {
+                    $items = $this->plugin->ssh_sync->list_directory( $remote_dir, $settings );
+                } catch ( Exception $e ) {
+                    throw new RuntimeException( 'Unable to list remote backups: ' . $e->getMessage() );
+                }
+
+                $candidates = array();
+                foreach ( (array) $items as $it ) {
+                    $name = (string) ( $it['name'] ?? '' );
+                    $type = (string) ( $it['type'] ?? 'file' );
+                    if ( 'file' === $type && preg_match( '/^tcuk-backup-.*\.zip$/i', $name ) ) {
+                        $candidates[] = $it;
+                    }
+                }
+
+                if ( empty( $candidates ) ) {
+                    throw new RuntimeException( 'No remote backup files found in ' . $remote_dir );
+                }
+
+                usort( $candidates, function ( $a, $b ) {
+                    $ma = ! empty( $a['mtime'] ) ? (int) $a['mtime'] : 0;
+                    $mb = ! empty( $b['mtime'] ) ? (int) $b['mtime'] : 0;
+                    return $mb <=> $ma;
+                } );
+
+                $remote_file_name = (string) $candidates[0]['name'];
+                $this->set_result( true, array( 'Auto-selected remote backup: ' . $remote_file_name ) );
+            } else {
+                $remote_file_name = $this->sanitize_backup_file_name( $remote_file_name_raw );
+            }
+
+            $local_file_name = sanitize_file_name( 'tcuk-sshpull-' . gmdate( 'Ymd-His' ) . '-' . $remote_file_name );
+            $local_path      = $this->plugin->backup_manager->get_backup_file_path( $local_file_name );
+            $pull_logs       = $this->plugin->ssh_sync->download_backup_file( $remote_file_name, $local_path, $settings );
+
+            $restore_request = $this->normalize_restore_request_for_plan( $request_data );
+            $restore_logs    = $this->plugin->backup_manager->restore_backup( $local_file_name, $restore_request );
+
+            $messages = array_merge(
+                $pull_logs,
+                array( 'Downloaded file stored as: ' . $local_file_name ),
+                $restore_logs
+            );
 
             $this->set_result( true, $messages );
         } catch ( Exception $e ) {
@@ -564,6 +744,37 @@ class TCUK_Migrator_Admin {
             }
         }
 
+        $ssh_host = trim( (string) ( $settings['ssh_host'] ?? '' ) );
+        $ssh_user = trim( (string) ( $settings['ssh_username'] ?? '' ) );
+        if ( '' === $ssh_host || '' === $ssh_user ) {
+            $this->add_wizard_check(
+                $checks,
+                'SSH transport settings',
+                'warning',
+                'SSH host/username not configured.',
+                'Configure SSH host, port, and credentials if you plan to use SSH Push/Pull transport.'
+            );
+        } else {
+            try {
+                $ssh_logs = $this->plugin->ssh_sync->test_connection( $settings );
+                $this->add_wizard_check(
+                    $checks,
+                    'SSH transport settings',
+                    'pass',
+                    ! empty( $ssh_logs[0] ) ? (string) $ssh_logs[0] : 'SSH connection successful.',
+                    ''
+                );
+            } catch ( Exception $e ) {
+                $this->add_wizard_check(
+                    $checks,
+                    'SSH transport settings',
+                    'fail',
+                    $e->getMessage(),
+                    'Verify SSH host, auth mode, credentials, and host key settings.'
+                );
+            }
+        }
+
         $counts = array(
             'pass'    => 0,
             'warning' => 0,
@@ -779,6 +990,62 @@ class TCUK_Migrator_Admin {
         return $clean;
     }
 
+    private function persist_connection_settings_from_request( $request ) {
+        $current_settings = $this->get_settings();
+        $settings         = $this->build_connection_settings_from_request( $request, $current_settings );
+
+        update_option( self::OPTION_KEY, $settings, false );
+        delete_transient( self::WIZARD_TRANSIENT );
+
+        return $settings;
+    }
+
+    private function build_connection_settings_from_request( $request, $current_settings ) {
+        $request          = is_array( $request ) ? $request : array();
+        $current_settings = is_array( $current_settings ) ? $current_settings : $this->get_settings();
+
+        $settings = array(
+            'remote_api_enabled'      => array_key_exists( 'remote_api_enabled', $request ) ? ( ! empty( $request['remote_api_enabled'] ) ? 1 : 0 ) : (int) ( $current_settings['remote_api_enabled'] ?? 0 ),
+            'remote_api_token'        => array_key_exists( 'remote_api_token', $request ) ? $this->sanitize_secret_field( $request['remote_api_token'] ) : (string) ( $current_settings['remote_api_token'] ?? '' ),
+            'remote_push_site_url'    => array_key_exists( 'remote_push_site_url', $request ) ? esc_url_raw( (string) $request['remote_push_site_url'] ) : (string) ( $current_settings['remote_push_site_url'] ?? '' ),
+            'remote_push_api_key'     => array_key_exists( 'remote_push_api_key', $request ) ? $this->sanitize_secret_field( $request['remote_push_api_key'] ) : (string) ( $current_settings['remote_push_api_key'] ?? '' ),
+            'remote_push_verify_ssl'  => array_key_exists( 'remote_push_verify_ssl', $request ) ? ( ! empty( $request['remote_push_verify_ssl'] ) ? 1 : 0 ) : (int) ( $current_settings['remote_push_verify_ssl'] ?? 1 ),
+            'github_repo'             => array_key_exists( 'github_repo', $request ) ? sanitize_text_field( (string) $request['github_repo'] ) : (string) ( $current_settings['github_repo'] ?? '' ),
+            'github_branch'           => array_key_exists( 'github_branch', $request ) ? sanitize_text_field( (string) $request['github_branch'] ) : (string) ( $current_settings['github_branch'] ?? 'main' ),
+            'github_theme_slug'       => array_key_exists( 'github_theme_slug', $request ) ? sanitize_text_field( (string) $request['github_theme_slug'] ) : (string) ( $current_settings['github_theme_slug'] ?? '' ),
+            'github_token'            => array_key_exists( 'github_token', $request ) ? $this->sanitize_secret_field( $request['github_token'] ) : (string) ( $current_settings['github_token'] ?? '' ),
+            'github_repo_subdir'      => array_key_exists( 'github_repo_subdir', $request ) ? sanitize_text_field( (string) $request['github_repo_subdir'] ) : (string) ( $current_settings['github_repo_subdir'] ?? '' ),
+            'ssh_host'                => array_key_exists( 'ssh_host', $request ) ? sanitize_text_field( (string) $request['ssh_host'] ) : (string) ( $current_settings['ssh_host'] ?? '' ),
+            'ssh_port'                => array_key_exists( 'ssh_port', $request ) ? max( 1, absint( $request['ssh_port'] ) ) : (int) ( $current_settings['ssh_port'] ?? 22 ),
+            'ssh_username'            => array_key_exists( 'ssh_username', $request ) ? sanitize_text_field( (string) $request['ssh_username'] ) : (string) ( $current_settings['ssh_username'] ?? '' ),
+            'ssh_auth_mode'           => array_key_exists( 'ssh_auth_mode', $request ) ? sanitize_key( (string) $request['ssh_auth_mode'] ) : (string) ( $current_settings['ssh_auth_mode'] ?? 'auto' ),
+            'ssh_password'            => array_key_exists( 'ssh_password', $request ) ? $this->sanitize_secret_field( $request['ssh_password'] ) : (string) ( $current_settings['ssh_password'] ?? '' ),
+            'ssh_private_key'         => array_key_exists( 'ssh_private_key', $request ) ? $this->sanitize_secret_field( $request['ssh_private_key'] ) : (string) ( $current_settings['ssh_private_key'] ?? '' ),
+            'ssh_public_key'          => array_key_exists( 'ssh_public_key', $request ) ? $this->sanitize_secret_field( $request['ssh_public_key'] ) : (string) ( $current_settings['ssh_public_key'] ?? '' ),
+            'ssh_key_passphrase'      => array_key_exists( 'ssh_key_passphrase', $request ) ? $this->sanitize_secret_field( $request['ssh_key_passphrase'] ) : (string) ( $current_settings['ssh_key_passphrase'] ?? '' ),
+            'ssh_remote_backup_dir'   => array_key_exists( 'ssh_remote_backup_dir', $request ) ? sanitize_text_field( (string) $request['ssh_remote_backup_dir'] ) : (string) ( $current_settings['ssh_remote_backup_dir'] ?? '/tmp/tcuk-migrator-backups' ),
+            'ssh_host_fingerprint'    => array_key_exists( 'ssh_host_fingerprint', $request ) ? sanitize_text_field( (string) $request['ssh_host_fingerprint'] ) : (string) ( $current_settings['ssh_host_fingerprint'] ?? '' ),
+            'ssh_strict_host_key'     => array_key_exists( 'ssh_strict_host_key', $request ) ? ( ! empty( $request['ssh_strict_host_key'] ) ? 1 : 0 ) : (int) ( $current_settings['ssh_strict_host_key'] ?? 1 ),
+            'ssh_allow_cli_fallback'  => array_key_exists( 'ssh_allow_cli_fallback', $request ) ? ( ! empty( $request['ssh_allow_cli_fallback'] ) ? 1 : 0 ) : (int) ( $current_settings['ssh_allow_cli_fallback'] ?? 1 ),
+            'ssh_connect_timeout'     => array_key_exists( 'ssh_connect_timeout', $request ) ? max( 5, absint( $request['ssh_connect_timeout'] ) ) : (int) ( $current_settings['ssh_connect_timeout'] ?? 20 ),
+            'premium_license_key'     => (string) ( $current_settings['premium_license_key'] ?? '' ),
+        );
+
+        if ( array_key_exists( 'premium_license_key', $request ) ) {
+            $settings['premium_license_key'] = $this->sanitize_secret_field( $request['premium_license_key'] );
+        }
+
+        if ( ! in_array( $settings['ssh_auth_mode'], array( 'auto', 'password', 'key' ), true ) ) {
+            $settings['ssh_auth_mode'] = 'auto';
+        }
+
+        if ( ! empty( $settings['remote_api_enabled'] ) && '' === $settings['remote_api_token'] ) {
+            $settings['remote_api_token'] = wp_generate_password( 48, false, false );
+        }
+
+        return $settings;
+    }
+
     private function get_settings() {
         $saved = get_option( self::OPTION_KEY, array() );
 
@@ -795,6 +1062,19 @@ class TCUK_Migrator_Admin {
                 'github_theme_slug'  => '',
                 'github_token'       => '',
                 'github_repo_subdir' => '',
+                'ssh_host'              => '',
+                'ssh_port'              => 22,
+                'ssh_username'          => '',
+                'ssh_auth_mode'         => 'auto',
+                'ssh_password'          => '',
+                'ssh_private_key'       => '',
+                'ssh_public_key'        => '',
+                'ssh_key_passphrase'    => '',
+                'ssh_remote_backup_dir' => '/tmp/tcuk-migrator-backups',
+                'ssh_host_fingerprint'  => '',
+                'ssh_strict_host_key'   => 1,
+                'ssh_allow_cli_fallback' => 1,
+                'ssh_connect_timeout'   => 20,
                 'premium_license_key' => '',
             )
         );
@@ -867,11 +1147,29 @@ class TCUK_Migrator_Admin {
         $redirect_url = admin_url( 'admin.php?page=tcuk-migrator' );
 
         if ( $this->is_async_request() ) {
-            wp_send_json_success(
-                array(
-                    'redirect' => $redirect_url,
-                )
-            );
+            // If an async request, include any transient result messages in the JSON response
+            $result = get_transient( self::RESULT_TRANSIENT );
+            if ( $result ) {
+                delete_transient( self::RESULT_TRANSIENT );
+            }
+
+            $data = array( 'redirect' => $redirect_url );
+            if ( is_array( $result ) ) {
+                $msgs = (array) ( $result['messages'] ?? array() );
+                if ( ! empty( $msgs ) ) {
+                    $data['message'] = implode( "\n", $msgs );
+                }
+                if ( isset( $result['success'] ) ) {
+                    $data['result_success'] = (bool) $result['success'];
+                }
+            }
+
+            // If the transient indicates a failure, return a JSON error envelope
+            if ( isset( $result['success'] ) && false === (bool) $result['success'] ) {
+                wp_send_json_error( $data );
+            }
+
+            wp_send_json_success( $data );
         }
 
         wp_safe_redirect( $redirect_url );

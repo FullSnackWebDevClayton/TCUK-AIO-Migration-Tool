@@ -78,8 +78,53 @@ class TCUK_Migrator_GitHub_Sync {
         }
 
         $root = $extract_dir . '/' . $entries[0];
+
+        // If a specific subdirectory was provided, use it. Otherwise try to
+        // auto-detect a theme directory inside the extracted archive by
+        // looking for folders that contain a top-level style.css with a
+        // Theme Name header. This makes pulls robust when the repo root is
+        // not the theme folder (common when the repository contains multiple
+        // projects or is a monorepo).
         if ( '' !== $subdir ) {
             $root = rtrim( $root, '/\\' ) . '/' . ltrim( $subdir, '/\\' );
+        } else {
+            // Search for a candidate theme directory under $root. We'll look
+            // up to a reasonable depth to avoid scanning huge trees.
+            $found = '';
+            $max_depth = 4;
+            $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root, RecursiveDirectoryIterator::SKIP_DOTS));
+            foreach ($iterator as $item) {
+                if (! $item->isDir()) {
+                    continue;
+                }
+
+                // compute depth relative to $root
+                $relative = str_replace('\\', '/', ltrim(str_replace($root, '', $item->getPathname()), '/\\'));
+                $depth = $relative === '' ? 0 : substr_count($relative, '/') + 1;
+                if ($depth > $max_depth) {
+                    continue;
+                }
+
+                $style = $item->getPathname() . DIRECTORY_SEPARATOR . 'style.css';
+                if (! file_exists($style)) {
+                    continue;
+                }
+
+                // Read header portion and check for Theme Name or stylesheet header
+                $contents = @file_get_contents($style, false, null, 0, 4096);
+                if (false === $contents) {
+                    continue;
+                }
+
+                if (preg_match('/Theme\s+Name\s*:/i', $contents) || preg_match('/Theme\s+URI\s*:/i', $contents)) {
+                    $found = $item->getPathname();
+                    break;
+                }
+            }
+
+            if ('' !== $found) {
+                $root = $found;
+            }
         }
 
         if ( ! is_dir( $root ) ) {
@@ -87,6 +132,19 @@ class TCUK_Migrator_GitHub_Sync {
         }
 
         $target = WP_CONTENT_DIR . '/themes/' . $theme_slug;
+        // Collect diagnostic info to help debug cases where WP reports
+        // "stylesheet is missing" despite a successful pull.
+        $diagnostics = array();
+        $diagnostics[] = 'Resolved theme root: ' . $root;
+        $diag_entries = @scandir( $root );
+        if ( false !== $diag_entries ) {
+            $visible = array_values( array_filter( $diag_entries, static function ( $e ) { return '.' !== $e && '..' !== $e; } ) );
+            $diagnostics[] = 'Entries at root: ' . implode( ', ', array_slice( $visible, 0, 25 ) );
+            $diagnostics[] = 'Contains style.css: ' . ( file_exists( rtrim( $root, '/\\' ) . DIRECTORY_SEPARATOR . 'style.css' ) ? 'yes' : 'no' );
+        } else {
+            $diagnostics[] = 'Unable to read resolved root directory.';
+        }
+
         $this->filesystem->copy_recursive( $root, $target, ! empty( $request['replace_existing'] ) );
 
         $this->filesystem->delete_recursive( $temp_dir );

@@ -658,10 +658,20 @@ class TCUK_Migrator_Backup_Manager {
 
         return array_map(
             static function ( $path ) {
+                $ts = filemtime( $path );
+                $display = '';
+                $iso = '';
+                if ( $ts ) {
+                    $display = date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $ts );
+                    $iso = date_i18n( 'c', $ts );
+                }
+
                 return array(
-                    'name'      => basename( $path ),
-                    'size'      => size_format( filesize( $path ) ),
-                    'timestamp' => filemtime( $path ),
+                    'name'             => basename( $path ),
+                    'size'             => size_format( filesize( $path ) ),
+                    'timestamp'        => $ts,
+                    'display_timestamp'=> $display,
+                    'iso_timestamp'    => $iso,
                 );
             },
             $items
