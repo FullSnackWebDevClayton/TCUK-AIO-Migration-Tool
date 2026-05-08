@@ -261,12 +261,17 @@ class TCUK_Migrator_Backup_Manager {
             }
 
             if ( in_array( 'database', $restore_components, true ) && file_exists( $payload_dir . '/database.sql' ) ) {
+                // Preserve API receive settings and the current destination site URL before importing.
                 $preserved_api_receive = $this->get_preserved_api_receive_settings();
+                $destination_site_url = untrailingslashit( home_url() );
+
+                // Import SQL payload (may overwrite siteurl/home) then restore preserved settings
+                // and re-apply the original destination URL so the site remains on the target domain.
                 $this->database->import_sql_into_current( $payload_dir . '/database.sql' );
                 $this->restore_preserved_api_receive_settings( $preserved_api_receive );
-                $this->enforce_current_site_urls();
+                $this->enforce_current_site_urls( $destination_site_url );
+
                 $placeholder_fixes = $this->database->repair_placeholder_tokens_in_current_db();
-                $destination_site_url = untrailingslashit( home_url() );
                 $replacements = $this->database->replace_url_references_in_current_db( $source_site_url, $destination_site_url );
                 $logs[] = 'Database restored.';
                 $logs[] = 'Destination site URLs normalized to current domain.';
@@ -358,10 +363,15 @@ class TCUK_Migrator_Backup_Manager {
         return $logs;
     }
 
-    private function enforce_current_site_urls() {
+    private function enforce_current_site_urls( $force_url = '' ) {
         global $wpdb;
 
-        $site_url = untrailingslashit( home_url() );
+        if ( '' !== (string) $force_url ) {
+            $site_url = untrailingslashit( trim( (string) $force_url ) );
+        } else {
+            $site_url = untrailingslashit( home_url() );
+        }
+
         if ( '' === $site_url ) {
             return;
         }
