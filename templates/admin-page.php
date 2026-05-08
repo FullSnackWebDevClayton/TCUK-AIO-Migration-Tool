@@ -73,13 +73,32 @@ $backup_count       = is_array( $backups ) ? count( $backups ) : 0;
     <section class="tcuk-card tcuk-card-wide tcuk-license-card tcuk-panel">
         <h2 class="tcuk-panel-title"><?php esc_html_e( 'Premium License', 'tcuk-all-in-one-migrator' ); ?></h2>
         <p class="tcuk-panel-desc"><?php esc_html_e( 'Enter your license key to unlock all migration features.', 'tcuk-all-in-one-migrator' ); ?></p>
+        <?php if ( empty( $license_status['active'] ) ) : ?>
         <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="tcuk-compact-form">
             <input type="hidden" name="action" value="tcuk_migrator_save_settings">
             <input type="hidden" name="settings_scope" value="license">
             <?php wp_nonce_field( 'tcuk_migrator_save_settings' ); ?>
-            <p class="tcuk-field"><label><?php esc_html_e( 'License Key', 'tcuk-all-in-one-migrator' ); ?></label><input type="text" name="premium_license_key" value="<?php echo esc_attr( $settings['premium_license_key'] ); ?>" class="widefat" placeholder="lic_xxxxxxxxx"></p>
+            <p class="tcuk-field"><label><?php esc_html_e( 'License Key', 'tcuk-all-in-one-migrator' ); ?></label>
+                <span style="display:flex;gap:8px;align-items:center;">
+                    <input type="password" name="premium_license_key" value="<?php echo esc_attr( $settings['premium_license_key'] ); ?>" class="widefat" placeholder="lic_xxxxxxxxx" style="flex:1;" />
+                    <button type="button" class="button tcuk-toggle-secret-visibility" aria-pressed="false" aria-label="<?php echo esc_attr__( 'Show license key', 'tcuk-all-in-one-migrator' ); ?>"><?php esc_html_e( 'Show', 'tcuk-all-in-one-migrator' ); ?></button>
+                </span>
+            </p>
             <p><button class="button button-primary tcuk-submit tcuk-btn tcuk-btn-primary" type="submit"><?php esc_html_e( 'Activate License', 'tcuk-all-in-one-migrator' ); ?></button></p>
         </form>
+        <?php else : ?>
+        <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="tcuk-compact-form">
+            <input type="hidden" name="action" value="tcuk_migrator_deactivate_license">
+            <?php wp_nonce_field( 'tcuk_migrator_save_settings' ); ?>
+            <p class="tcuk-field"><label><?php esc_html_e( 'License Key', 'tcuk-all-in-one-migrator' ); ?></label>
+                <span style="display:flex;gap:8px;align-items:center;">
+                    <input type="password" name="premium_license_key" value="<?php echo esc_attr( $settings['premium_license_key'] ); ?>" class="widefat" placeholder="lic_xxxxxxxxx" style="flex:1;" readonly />
+                    <button type="button" class="button tcuk-toggle-secret-visibility" aria-pressed="false" aria-label="<?php echo esc_attr__( 'Show license key', 'tcuk-all-in-one-migrator' ); ?>"><?php esc_html_e( 'Show', 'tcuk-all-in-one-migrator' ); ?></button>
+                </span>
+            </p>
+            <p><button class="button tcuk-btn tcuk-btn-ghost" type="submit"><?php esc_html_e( 'Deactivate License', 'tcuk-all-in-one-migrator' ); ?></button></p>
+        </form>
+        <?php endif; ?>
     </section>
 
     <?php if ( ! empty( $is_premium ) ) : ?>
@@ -147,7 +166,12 @@ $backup_count       = is_array( $backups ) ? count( $backups ) : 0;
                         <div class="tcuk-field"><label><?php esc_html_e( 'Theme Folder Slug', 'tcuk-all-in-one-migrator' ); ?></label><input type="text" name="github_theme_slug" value="<?php echo esc_attr( $github_theme_value ); ?>" class="widefat tcuk-theme-slug-field"></div>
                         <div class="tcuk-field"><label><?php esc_html_e( 'Branch', 'tcuk-all-in-one-migrator' ); ?></label><input type="text" name="github_branch" value="<?php echo esc_attr( $settings['github_branch'] ); ?>" class="widefat"></div>
                         <div class="tcuk-field"><label><?php esc_html_e( 'Repo Subdirectory (optional)', 'tcuk-all-in-one-migrator' ); ?></label><input type="text" name="github_repo_subdir" value="<?php echo esc_attr( $settings['github_repo_subdir'] ); ?>" class="widefat" placeholder="themes/your-theme"></div>
-                        <div class="tcuk-field tcuk-field-full"><label><?php esc_html_e( 'Token / PAT (optional)', 'tcuk-all-in-one-migrator' ); ?></label><input type="password" name="github_token" value="<?php echo esc_attr( $settings['github_token'] ); ?>" class="widefat"></div>
+                        <div class="tcuk-field tcuk-field-full"><label><?php esc_html_e( 'Token / PAT (optional)', 'tcuk-all-in-one-migrator' ); ?></label>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <input type="password" name="github_token" value="<?php echo esc_attr( $settings['github_token'] ); ?>" class="widefat" style="flex:1;" />
+                                <button type="button" class="button tcuk-toggle-secret-visibility" aria-pressed="false" aria-label="<?php echo esc_attr__( 'Show token', 'tcuk-all-in-one-migrator' ); ?>"><?php esc_html_e( 'Show', 'tcuk-all-in-one-migrator' ); ?></button>
+                            </div>
+                        </div>
                     </div>
                     <p class="tcuk-group-action"><button class="button tcuk-submit tcuk-btn tcuk-btn-ghost" type="submit" form="tcuk-github-test-form" <?php disabled( empty( $is_premium ) ); ?>><?php esc_html_e( 'Test GitHub Connection', 'tcuk-all-in-one-migrator' ); ?></button></p>
                 </div>
@@ -157,10 +181,24 @@ $backup_count       = is_array( $backups ) ? count( $backups ) : 0;
                     <p class="description"><?php esc_html_e( 'Use a token-protected WordPress REST endpoint for one-click push from local to live.', 'tcuk-all-in-one-migrator' ); ?></p>
                     <p class="description"><?php esc_html_e( 'Please hit save to get your Receive API Token.', 'tcuk-all-in-one-migrator' ); ?></p>
                     <div class="tcuk-cols-2 tcuk-grid md:tcuk-grid-cols-2 tcuk-gap-4">
-                        <div class="tcuk-field"><label><input type="checkbox" name="remote_api_enabled" value="1" <?php checked( ! empty( $settings['remote_api_enabled'] ) ); ?> <?php disabled( empty( $is_premium ) ); ?>> <?php esc_html_e( 'Enable receive endpoint on this site', 'tcuk-all-in-one-migrator' ); ?></label></div>
+                        <?php $remote_api_enabled = ! empty( $settings['remote_api_enabled'] ); ?>
+                        <div class="tcuk-field"><label><input id="tcuk-remote-api-enabled" type="checkbox" name="remote_api_enabled" value="1" <?php checked( $remote_api_enabled ); ?> <?php disabled( empty( $is_premium ) ); ?>> <?php esc_html_e( 'Enable receive endpoint on this site', 'tcuk-all-in-one-migrator' ); ?></label></div>
                         <div class="tcuk-field"><label><input type="checkbox" name="remote_push_verify_ssl" value="1" <?php checked( ! empty( $settings['remote_push_verify_ssl'] ) ); ?>> <?php esc_html_e( 'Verify SSL certificate for API Push', 'tcuk-all-in-one-migrator' ); ?></label></div>
-                        <div class="tcuk-field"><label><?php esc_html_e( 'Receive API Token', 'tcuk-all-in-one-migrator' ); ?></label><input type="text" name="remote_api_token" value="<?php echo esc_attr( $settings['remote_api_token'] ); ?>" class="widefat" placeholder="Auto-generated on save when enabled"></div>
-                        <div class="tcuk-field"><label><?php esc_html_e( 'API Push Key', 'tcuk-all-in-one-migrator' ); ?></label><input type="text" name="remote_push_api_key" value="<?php echo esc_attr( $settings['remote_push_api_key'] ); ?>" class="widefat" placeholder="Use token from destination site"></div>
+                        <div class="tcuk-field tcuk-token-field"><label><?php esc_html_e( 'Receive API Token', 'tcuk-all-in-one-migrator' ); ?></label>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <input id="tcuk-remote-api-token" type="<?php echo $remote_api_enabled ? 'text' : 'password'; ?>" name="remote_api_token" value="<?php echo esc_attr( $settings['remote_api_token'] ); ?>" class="widefat" placeholder="Auto-generated on save when enabled" readonly style="flex:1;" />
+                                <div style="display:flex;gap:8px;">
+                                    <button type="button" class="button tcuk-copy-token" aria-label="<?php echo esc_attr__( 'Copy receive token', 'tcuk-all-in-one-migrator' ); ?>"><?php esc_html_e( 'Copy', 'tcuk-all-in-one-migrator' ); ?></button>
+                                    <button type="button" class="button tcuk-toggle-token-visibility" aria-pressed="false" aria-label="<?php echo esc_attr__( 'Show receive token', 'tcuk-all-in-one-migrator' ); ?>"><?php echo esc_html_x( 'Show', 'show token', 'tcuk-all-in-one-migrator' ); ?></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tcuk-field"><label><?php esc_html_e( 'API Push Key', 'tcuk-all-in-one-migrator' ); ?></label>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <input type="password" name="remote_push_api_key" value="<?php echo esc_attr( $settings['remote_push_api_key'] ); ?>" class="widefat" placeholder="Use token from destination site" style="flex:1;" />
+                                <button type="button" class="button tcuk-toggle-secret-visibility" aria-pressed="false" aria-label="<?php echo esc_attr__( 'Show API Push key', 'tcuk-all-in-one-migrator' ); ?>"><?php esc_html_e( 'Show', 'tcuk-all-in-one-migrator' ); ?></button>
+                            </div>
+                        </div>
                         <div class="tcuk-field tcuk-field-full"><label><?php esc_html_e( 'API Push Destination URL', 'tcuk-all-in-one-migrator' ); ?></label><input type="url" name="remote_push_site_url" value="<?php echo esc_attr( $settings['remote_push_site_url'] ); ?>" class="widefat" placeholder="https://live-site.com"></div>
                     </div>
                     <p class="tcuk-group-action"><button class="button tcuk-submit tcuk-btn tcuk-btn-ghost" type="submit" form="tcuk-api-test-form" <?php disabled( empty( $is_premium ) ); ?>><?php esc_html_e( 'Test API Push Connection', 'tcuk-all-in-one-migrator' ); ?></button></p>
@@ -181,10 +219,20 @@ $backup_count       = is_array( $backups ) ? count( $backups ) : 0;
                                 <option value="key" <?php selected( $settings['ssh_auth_mode'], 'key' ); ?>><?php esc_html_e( 'Key only', 'tcuk-all-in-one-migrator' ); ?></option>
                             </select>
                         </div>
-                        <div class="tcuk-field"><label><?php esc_html_e( 'SSH Key Passphrase (optional)', 'tcuk-all-in-one-migrator' ); ?></label><input type="password" name="ssh_key_passphrase" value="<?php echo esc_attr( $settings['ssh_key_passphrase'] ); ?>" class="widefat" autocomplete="new-password"></div>
+                        <div class="tcuk-field"><label><?php esc_html_e( 'SSH Key Passphrase (optional)', 'tcuk-all-in-one-migrator' ); ?></label>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <input type="password" name="ssh_key_passphrase" value="<?php echo esc_attr( $settings['ssh_key_passphrase'] ); ?>" class="widefat" autocomplete="new-password" style="flex:1;" />
+                                <button type="button" class="button tcuk-toggle-secret-visibility" aria-pressed="false" aria-label="<?php echo esc_attr__( 'Show SSH key passphrase', 'tcuk-all-in-one-migrator' ); ?>"><?php esc_html_e( 'Show', 'tcuk-all-in-one-migrator' ); ?></button>
+                            </div>
+                        </div>
                         <div class="tcuk-field"><label><input type="checkbox" name="ssh_strict_host_key" value="1" <?php checked( ! empty( $settings['ssh_strict_host_key'] ) ); ?>> <?php esc_html_e( 'Enable strict host key verification', 'tcuk-all-in-one-migrator' ); ?></label></div>
                         <div class="tcuk-field"><label><input type="checkbox" name="ssh_allow_cli_fallback" value="1" <?php checked( ! empty( $settings['ssh_allow_cli_fallback'] ) ); ?>> <?php esc_html_e( 'Allow CLI fallback (ssh/scp) when ssh2 is unavailable', 'tcuk-all-in-one-migrator' ); ?></label></div>
-                        <div class="tcuk-field tcuk-field-full"><label><?php esc_html_e( 'SSH Password', 'tcuk-all-in-one-migrator' ); ?></label><input type="password" name="ssh_password" value="<?php echo esc_attr( $settings['ssh_password'] ); ?>" class="widefat" autocomplete="new-password"></div>
+                        <div class="tcuk-field tcuk-field-full"><label><?php esc_html_e( 'SSH Password', 'tcuk-all-in-one-migrator' ); ?></label>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <input type="password" name="ssh_password" value="<?php echo esc_attr( $settings['ssh_password'] ); ?>" class="widefat" autocomplete="new-password" style="flex:1;" />
+                                <button type="button" class="button tcuk-toggle-secret-visibility" aria-pressed="false" aria-label="<?php echo esc_attr__( 'Show SSH password', 'tcuk-all-in-one-migrator' ); ?>"><?php esc_html_e( 'Show', 'tcuk-all-in-one-migrator' ); ?></button>
+                            </div>
+                        </div>
                         <div class="tcuk-field tcuk-field-full">
                             <label><?php esc_html_e( 'Remote Backup Directory', 'tcuk-all-in-one-migrator' ); ?></label>
                             <div style="display:flex;gap:8px;align-items:center;">
@@ -199,11 +247,17 @@ $backup_count       = is_array( $backups ) ? count( $backups ) : 0;
                         <div class="tcuk-cols-2 tcuk-gap-4">
                             <div class="tcuk-field">
                                 <label><?php esc_html_e( 'SSH Private Key (optional)', 'tcuk-all-in-one-migrator' ); ?></label>
-                                <textarea name="ssh_private_key" class="widefat tcuk-font-mono" rows="5" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"><?php echo esc_textarea( $settings['ssh_private_key'] ); ?></textarea>
+                                <textarea name="ssh_private_key" class="widefat tcuk-font-mono tcuk-secret-textarea" rows="5" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"><?php echo esc_textarea( $settings['ssh_private_key'] ); ?></textarea>
+                                <div style="margin-top:6px;">
+                                    <button type="button" class="button tcuk-toggle-secret-visibility" aria-pressed="false" aria-label="<?php echo esc_attr__( 'Show SSH private key', 'tcuk-all-in-one-migrator' ); ?>"><?php esc_html_e( 'Show', 'tcuk-all-in-one-migrator' ); ?></button>
+                                </div>
                             </div>
                             <div class="tcuk-field">
                                 <label><?php esc_html_e( 'SSH Public Key (required for ssh2 key auth)', 'tcuk-all-in-one-migrator' ); ?></label>
-                                <textarea name="ssh_public_key" class="widefat tcuk-font-mono" rows="5" placeholder="ssh-rsa AAAA..."><?php echo esc_textarea( $settings['ssh_public_key'] ); ?></textarea>
+                                <textarea name="ssh_public_key" class="widefat tcuk-font-mono tcuk-secret-textarea" rows="5" placeholder="ssh-rsa AAAA..."><?php echo esc_textarea( $settings['ssh_public_key'] ); ?></textarea>
+                                <div style="margin-top:6px;">
+                                    <button type="button" class="button tcuk-toggle-secret-visibility" aria-pressed="false" aria-label="<?php echo esc_attr__( 'Show SSH public key', 'tcuk-all-in-one-migrator' ); ?>"><?php esc_html_e( 'Show', 'tcuk-all-in-one-migrator' ); ?></button>
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -18,6 +18,7 @@ class TCUK_Migrator_Admin {
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 
         add_action( 'admin_post_tcuk_migrator_save_settings', array( $this, 'save_settings' ) );
+        add_action( 'admin_post_tcuk_migrator_deactivate_license', array( $this, 'deactivate_license' ) );
         add_action( 'admin_post_tcuk_migrator_remote_api_test', array( $this, 'run_remote_api_test' ) );
         add_action( 'admin_post_tcuk_migrator_repair_fse', array( $this, 'run_repair_fse' ) );
         add_action( 'admin_post_tcuk_migrator_setup_wizard', array( $this, 'run_setup_wizard' ) );
@@ -141,6 +142,22 @@ class TCUK_Migrator_Admin {
         delete_transient( self::WIZARD_TRANSIENT );
 
         $this->set_result( true, array( 'Settings saved.' ) );
+        $this->redirect_to_page();
+    }
+
+    public function deactivate_license() {
+        $this->assert_permissions( 'tcuk_migrator_save_settings' );
+
+        try {
+            $settings = $this->get_settings();
+            $settings['premium_license_key'] = '';
+            update_option( self::OPTION_KEY, $settings, false );
+
+            $this->set_result( true, array( 'License deactivated.' ) );
+        } catch ( Exception $e ) {
+            $this->set_result( false, array( $e->getMessage() ) );
+        }
+
         $this->redirect_to_page();
     }
 

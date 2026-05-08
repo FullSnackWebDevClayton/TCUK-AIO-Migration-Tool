@@ -274,6 +274,57 @@
         }
     })();
 
+    // Generic show/hide handlers for any secret toggle buttons we added
+    (function bindGenericSecretToggles() {
+        try {
+            const buttons = document.querySelectorAll('.tcuk-toggle-secret-visibility');
+            buttons.forEach((btn) => {
+                // Set initial label state based on whether the associated field is masked
+                const container = btn.closest('.tcuk-field') || btn.parentElement || btn.closest('div') || btn.parentNode;
+                const field = container ? container.querySelector('input, textarea') : null;
+                if (!field) return;
+
+                if (field.tagName === 'TEXTAREA') {
+                    // mask textareas by default
+                    field.classList.add('tcuk-secret-masked');
+                    field.style.filter = 'blur(6px)';
+                    btn.textContent = 'Show';
+                    btn.setAttribute('aria-pressed', 'false');
+                } else {
+                    if (field.type === 'password') {
+                        btn.textContent = 'Show';
+                        btn.setAttribute('aria-pressed', 'false');
+                    } else {
+                        btn.textContent = 'Hide';
+                        btn.setAttribute('aria-pressed', 'true');
+                    }
+                }
+
+                btn.addEventListener('click', (ev) => {
+                    ev.preventDefault();
+                    try {
+                        if (!field) return;
+                        if (field.tagName === 'TEXTAREA') {
+                            const hidden = field.style.filter && field.style.filter !== 'none';
+                            field.style.filter = hidden ? 'none' : 'blur(6px)';
+                            btn.textContent = hidden ? 'Hide' : 'Show';
+                            btn.setAttribute('aria-pressed', hidden ? 'true' : 'false');
+                        } else {
+                            const isPassword = field.type === 'password';
+                            field.type = isPassword ? 'text' : 'password';
+                            btn.textContent = isPassword ? 'Hide' : 'Show';
+                            btn.setAttribute('aria-pressed', isPassword ? 'true' : 'false');
+                        }
+                    } catch (e) {
+                        console.warn('tcuk-admin: secret toggle error', e);
+                    }
+                });
+            });
+        } catch (e) {
+            console.warn('tcuk-admin: bindGenericSecretToggles error', e);
+        }
+    })();
+
     const progressWrap = document.getElementById('tcuk-progress');
     const progressFill = document.getElementById('tcuk-progress-fill');
     const progressText = document.getElementById('tcuk-progress-text');
@@ -415,6 +466,114 @@
     const connectionForm = root.querySelector('.tcuk-connection-form');
     // Target forms that should inherit connection settings when submitted
     const syncSettingsForms = root.querySelectorAll('.tcuk-sync-settings-form, .tcuk-action-form');
+
+    // Live toggle for Receive endpoint: persist via AJAX and show generated token immediately
+    (function bindReceiveToggle() {
+        try {
+            const checkbox = document.getElementById('tcuk-remote-api-enabled') || document.querySelector('input[name="remote_api_enabled"]');
+            const tokenField = document.getElementById('tcuk-remote-api-token') || document.querySelector('input[name="remote_api_token"]');
+            const copyBtn = document.querySelector('.tcuk-copy-token');
+            if (!checkbox || !tokenField) return;
+
+            // Initial mask state
+            try { tokenField.type = checkbox.checked ? 'text' : 'password'; } catch (e) {}
+
+            // Copy-to-clipboard handler
+            if (copyBtn) {
+                copyBtn.addEventListener('click', (ev) => {
+                    ev.preventDefault();
+                    const val = tokenField.value || '';
+                    if (!val) {
+                        TCUK.toast('No token to copy', 'error');
+                        return;
+                    }
+
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(val).then(() => {
+                            TCUK.toast('Token copied to clipboard', 'success');
+                        }).catch(() => {
+                            TCUK.toast('Copy failed', 'error');
+                        });
+                    } else {
+                        // fallback
+                        try {
+                            tokenField.select();
+                            document.execCommand('copy');
+                            window.getSelection().removeAllRanges();
+                            TCUK.toast('Token copied to clipboard', 'success');
+                        } catch (e) {
+                            TCUK.toast('Copy failed', 'error');
+                        }
+                    }
+                });
+            }
+
+            // Toggle visibility handler (Show/Hide)
+            const toggleBtn = document.querySelector('.tcuk-toggle-token-visibility');
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', (ev) => {
+                    ev.preventDefault();
+                    try {
+                        const isHidden = tokenField.type === 'password';
+                        tokenField.type = isHidden ? 'text' : 'password';
+                        toggleBtn.textContent = isHidden ? 'Hide' : 'Show';
+                        toggleBtn.setAttribute('aria-pressed', isHidden ? 'true' : 'false');
+                        toggleBtn.setAttribute('aria-label', isHidden ? 'Hide receive token' : 'Show receive token');
+                    } catch (e) {
+                        console.warn('tcuk-admin: toggle visibility error', e);
+                    }
+                });
+            }
+
+            checkbox.addEventListener('change', (e) => {
+                const enabled = checkbox.checked ? '1' : '0';
+                const ajaxUrl = (typeof tcukMigratorAjax !== 'undefined' && tcukMigratorAjax.ajax_url) ? tcukMigratorAjax.ajax_url : window.location.origin + '/wp-admin/admin-ajax.php';
+                const ajaxNonce = (typeof tcukMigratorAjax !== 'undefined' && tcukMigratorAjax.nonce) ? tcukMigratorAjax.nonce : '';
+
+                TCUK.toast(checkbox.checked ? 'Enabling receive endpoint...' : 'Disabling receive endpoint...', 'info', 2000);
+
+                const fd = new FormData();
+                fd.append('action', 'tcuk_toggle_remote_api');
+                fd.append('nonce', ajaxNonce);
+                fd.append('enable', enabled);
+
+                fetch(ajaxUrl, { method: 'POST', body: fd, credentials: 'same-origin' })
+                    .then(r => r.json())
+                    .then((payload) => {
+                        if (!payload) {
+                            TCUK.toast('Unexpected response', 'error');
+                            checkbox.checked = !checkbox.checked;
+                            return;
+                        }
+
+                        if (!payload.success) {
+                            const msg = (payload.data && payload.data.message) ? payload.data.message : 'Request failed';
+                            TCUK.toast(msg, 'error');
+                            // revert checkbox state on failure
+                            checkbox.checked = !checkbox.checked;
+                            return;
+                        }
+
+                        const data = payload.data || {};
+                        if (typeof data.remote_api_token !== 'undefined') {
+                            tokenField.value = data.remote_api_token || '';
+                        }
+
+                        // update mask to reflect enabled state
+                        try { tokenField.type = checkbox.checked ? 'text' : 'password'; } catch (e) {}
+
+                        TCUK.toast(checkbox.checked ? 'Receive endpoint enabled' : 'Receive endpoint disabled', checkbox.checked ? 'success' : 'info');
+                    })
+                    .catch((err) => {
+                        console.error('tcuk-admin: toggle_remote_api error', err);
+                        TCUK.toast('Request failed', 'error');
+                        checkbox.checked = !checkbox.checked;
+                    });
+            });
+        } catch (e) {
+            console.warn('tcuk-admin: bindReceiveToggle error', e);
+        }
+    })();
 
     const appendSyncedField = (targetForm, name, value) => {
         const hidden = document.createElement('input');
@@ -824,7 +983,46 @@
                             const actionName = actionField ? (actionField.value || '').trim() : '';
                             const scopeName = scopeField ? (scopeField.value || '').trim() : '';
 
-                            if (actionName === 'tcuk_migrator_save_settings' && scopeName === 'license') {
+                            // After saving settings (full scope), refresh admin markup so
+                            // generated values (e.g. Receive API Token) appear without reload.
+                            if (actionName === 'tcuk_migrator_save_settings') {
+                                const ajaxUrl = (typeof tcukMigratorAjax !== 'undefined' && tcukMigratorAjax.ajax_url) ? tcukMigratorAjax.ajax_url : window.location.origin + '/wp-admin/admin-ajax.php';
+                                const ajaxNonce = (typeof tcukMigratorAjax !== 'undefined' && tcukMigratorAjax.nonce) ? tcukMigratorAjax.nonce : '';
+
+                                const fd = new FormData();
+                                fd.append('action', 'tcuk_refresh_admin_markup');
+                                fd.append('nonce', ajaxNonce);
+
+                                fetch(ajaxUrl, { method: 'POST', body: fd, credentials: 'same-origin' })
+                                    .then(r => r.json())
+                                    .then((payload) => {
+                                        if (payload && payload.success && payload.data && payload.data.html) {
+                                            try {
+                                                const parser = new DOMParser();
+                                                const doc = parser.parseFromString(payload.data.html, 'text/html');
+                                                const newWrap = doc.querySelector('.tcuk-migrator-wrap');
+                                                const oldWrap = document.querySelector('.tcuk-migrator-wrap');
+                                                if (newWrap && oldWrap) {
+                                                    oldWrap.outerHTML = newWrap.outerHTML;
+
+                                                    const existing = document.querySelector('script[src*="assets/js/admin.js"]');
+                                                    if (existing && existing.src) {
+                                                        const s = document.createElement('script');
+                                                        s.src = existing.src + '?r=' + Date.now();
+                                                        document.body.appendChild(s);
+                                                    }
+                                                }
+                                            } catch (e) {
+                                                console.error('tcuk-admin: refresh markup parse error', e);
+                                            }
+                                        } else if (payload && payload.data && payload.data.message) {
+                                            TCUK.toast(payload.data.message, 'error');
+                                        }
+                                    }).catch((err) => {
+                                        console.error('tcuk-admin: refresh_markup fetch error', err);
+                                    });
+                            }
+                            else if (actionName === 'tcuk_migrator_save_settings' && scopeName === 'license') {
                                 const ajaxUrl = (typeof tcukMigratorAjax !== 'undefined' && tcukMigratorAjax.ajax_url) ? tcukMigratorAjax.ajax_url : window.location.origin + '/wp-admin/admin-ajax.php';
                                 const ajaxNonce = (typeof tcukMigratorAjax !== 'undefined' && tcukMigratorAjax.nonce) ? tcukMigratorAjax.nonce : '';
 
