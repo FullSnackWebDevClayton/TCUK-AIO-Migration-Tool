@@ -70,7 +70,8 @@ class TCUK_Migrator_Backup_Manager {
                     $this->filesystem->copy_recursive(
                         WP_CONTENT_DIR . '/themes/' . $source_slug,
                         $working_dir . '/wp-content/themes/' . $destination_slug,
-                        true
+                        true,
+                        $this->get_theme_backup_excludes()
                     );
 
                     $manifest_themes[] = $destination_slug;
@@ -726,6 +727,19 @@ class TCUK_Migrator_Backup_Manager {
         }
 
         return $target_name;
+    }
+
+    private function get_theme_backup_excludes() {
+        return array(
+            '.cache',
+            '.git',
+            '.github',
+            '.idea',
+            '.sass-cache',
+            '.vscode',
+            'coverage',
+            'node_modules',
+        );
     }
 
     public function import_raw_backup( $raw_contents, $original_name = 'remote-push.zip' ) {

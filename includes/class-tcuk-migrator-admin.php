@@ -609,6 +609,21 @@ class TCUK_Migrator_Admin {
             if ( false === $size ) {
                 wp_die( esc_html__( 'Unable to read backup file metadata.', 'tcuk-all-in-one-migrator' ) );
             }
+            // Try to avoid script timeouts during large downloads
+            if ( function_exists( 'set_time_limit' ) ) {
+                @set_time_limit( 0 );
+            }
+
+            // Prevent WP from attempting to flush output buffers during shutdown
+            remove_action( 'shutdown', 'wp_ob_end_flush_all', 1 );
+
+            // Clear any existing output buffers to avoid corrupting binary stream
+            while ( ob_get_level() > 0 ) {
+                @ob_end_clean();
+            }
+
+            // Disable server-side buffering where supported (nginx X-Accel)
+            header( 'X-Accel-Buffering: no' );
 
             nocache_headers();
             header( 'Content-Type: application/zip' );
@@ -620,9 +635,10 @@ class TCUK_Migrator_Admin {
                 wp_die( esc_html__( 'Unable to open backup file.', 'tcuk-all-in-one-migrator' ) );
             }
 
+            $chunk_size = 1048576; // 1MB
             while ( ! feof( $handle ) ) {
-                echo fread( $handle, 8192 ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-                flush();
+                echo fread( $handle, $chunk_size ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+                @flush();
             }
 
             fclose( $handle );
